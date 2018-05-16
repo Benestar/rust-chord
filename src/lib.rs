@@ -1,3 +1,5 @@
 extern crate byteorder;
 
-mod api;
+mod client;
+mod message;
+mod server;
