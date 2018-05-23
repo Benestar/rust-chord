@@ -1,0 +1,55 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{comment} % enables the use of multi-line comments (\ifx \fi) 
+\usepackage{lipsum} %This package just generates Lorem Ipsum filler text. 
+\usepackage{fullpage} % changes the margin
+\usepackage{todonotes}
+
+\begin{document}
+%Header-Make sure you update this information!!!!
+\noindent
+\large\textbf{VoidPhone Project} \hfill \textbf{Initial Approach Report} \\
+\normalsize P2PSEC (IN2194)  \hfill Team 45 - Rhodium\\
+Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su \\
+Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 05/25/18
+
+\section*{Team Composition}
+We are Benedikt Seidl and Stefan Su, both studying Informatics in the sixth semester of our Bachelor's degree. We are team ``Rhodium'' and will be working on the DHT project.
+
+\section*{Programming Language, Operating System}
+For our DHT implementation, we will be using Rust \cite{Rust}. \todo{Specify which version number?}
+
+\section*{Build System}
+Rust comes with its own build system Cargo \cite{Cargo} \todo{Specify which version number?}. 
+
+\section*{Quality Measures}
+\lipsum[4]
+% to comment sections out, use the command \ifx and \fi. Use this technique when writing your pre lab. For example, to comment something out I would do:
+%  \ifx
+%   \begin{itemize}
+%       \item item1
+%       \item item2
+%   \end{itemize}   
+%  \fi
+
+\section*{Available Libraries}
+We can obtain packages (= dependencies) from the central package registry crate.io \cite{Cargo}. 
+
+\section*{Software License}
+\lipsum[6]
+
+\section*{Previous Programming Experience within the Team}
+\lipsum[7]
+
+\section*{Workload Sharing}
+\lipsum[8]
+%Make sure to change these
+%\fi %comment me out
+
+\begin{thebibliography}{9}
+\bibitem{Rust} \emph{The Rust Programming Language}. Available: https://www.rust-lang.org/en-US/index.html [Accessed: May 2018].
+\bibitem{Cargo} \emph{The Cargo Book}. Available: https://doc.rust-lang.org/cargo/index.html [Accessed: May 2018].
+\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: https://doc.rust-lang.org/stable/book/second-edition/ [Accessed: May 2018].
+\bibitem{Crate} \emph{crates.io Rust Package Registry}. Available: https://crates.io/ [Accessed: May 2018].
+\end{thebibliography}
+
+\end{document}
