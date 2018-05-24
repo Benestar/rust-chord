@@ -16,38 +16,43 @@ Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 05/25/18
 \section*{Team Composition}
 We are Benedikt Seidl and Stefan Su, both studying Informatics in the sixth semester of our Bachelor's degree. As a team name we chose ``Rhodium'' \footnote{Rhodium is the element with atomic number 45.} and will be working on the Distributed Hash Table (DHT) project.
 
-\section*{Programming Language, Operating System}
-For our DHT implementation, we will be using Rust \cite{Rust}.  \todo{Specify which version number?}
+\section*{Programming Language}
+We decided to use Rust \cite{Rust} to implement the DHT. Rust is a modern system programming language with features known from high level programming languages. It includes a strong type system and supports object orientation as well as functional programming. This allows to write safe and fast code on a high abstraction level. One does not have to pay for this with runtime costs like garbage collection or interpreters as Rust compiles to native LLVM code using zero-cost abstractions. \cite{RustFAQ}
+
+\section*{Operating System}
+As operating systems, we use macOS and Linux which have the advantage of being Unix-based and thus supporting most development tools and libraries that may be needed during development. However, since Rust supports all major operating systems, it should also be possible to run the software under Windows, at least as long as we do not require any special libraries.
 
 \section*{Build System}
-Rust comes with its own build system Cargo \cite{Cargo} \todo{Specify which version number?}. Ensures efficient building by only building the things that have changed...? 
+Rust comes with its own build system called ``Cargo''. \cite{Cargo} Cargo serves as a build tool but can do much more. It only compiles files that have changed since the last compilation. Furthermore, it serves as a test runner, can create HTML documentation based on inline comments and manages the depencies of our project.
+
+Since Cargo is so easy to setup, we currently do not plan to provide further build files for Docker or Vagrant. If it turns out that our build process is more complicated than expected, we can still integrate a more elaborate build system.
 
 \section*{Quality Measures}
-\lipsum[4]
-% to comment sections out, use the command \ifx and \fi. Use this technique when writing your pre lab. For example, to comment something out I would do:
-%  \ifx
-%   \begin{itemize}
-%       \item item1
-%       \item item2
-%   \end{itemize}   
-%  \fi
+Rust supports writing automated unit and integration tests natively and with Cargo it is a breeze to run them. By applying the concept of test driven development (TDD) we make sure that our code matches the intended design. We also aspire to maintain a high test coverage.
+
+Furthermore, Rust ensures by its language design that a lot of common bugs cannot occur. It does not allow invalid memory access such as use after free or null pointers and its strong type system guarantees that all type errors are caught at compile time.
 
 \section*{Available Libraries}
+\todo{explain crates.io}
 We can obtain packages (= dependencies) from the central package registry crates.io \cite{Crates} by referencing external crates in our project dependencies.
 
 \section*{Software License}
+\todo{use AGPL to get improvements back to the open source community}
 \lipsum[6]
 
 \section*{Previous Programming Experience within the Team}
+\todo{jeder für sich}
 \lipsum[7]
 
 \section*{Workload Sharing}
+\todo{zu klären}
 \lipsum[8]
 %Make sure to change these
 %\fi %comment me out
 
 \begin{thebibliography}{9}
 \bibitem{Rust} \emph{The Rust Programming Language}. Available: \url{https://www.rust-lang.org/en-US/index.html} [Accessed: May 2018].
+\bibitem{RustFAQ} \emph{Frequently Asked Questions}. Available: \url{https://www.rust-lang.org/en-US/faq.html} [Accessed: May 2018].
 \bibitem{Cargo} \emph{The Cargo Book}. Available: \url{https://doc.rust-lang.org/cargo/index.html }[Accessed: May 2018].
 \bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: \url{https://doc.rust-lang.org/stable/book/second-edition/} [Accessed: May 2018].
 \bibitem{Crates} \emph{crates.io Rust Package Registry}. Available: \url{https://crates.io/} [Accessed: May 2018].
