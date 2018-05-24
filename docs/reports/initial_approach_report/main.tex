@@ -3,6 +3,7 @@
 \usepackage{lipsum} %This package just generates Lorem Ipsum filler text. 
 \usepackage{fullpage} % changes the margin
 \usepackage{todonotes}
+\usepackage{hyperref}
 
 \begin{document}
 %Header-Make sure you update this information!!!!
@@ -19,7 +20,7 @@ We are Benedikt Seidl and Stefan Su, both studying Informatics in the sixth seme
 For our DHT implementation, we will be using Rust \cite{Rust}. \todo{Specify which version number?}
 
 \section*{Build System}
-Rust comes with its own build system Cargo \cite{Cargo} \todo{Specify which version number?}. 
+Rust comes with its own build system Cargo \cite{Cargo} \todo{Specify which version number?}. Ensures efficient building by only building the things that have changed...? 
 
 \section*{Quality Measures}
 \lipsum[4]
@@ -32,7 +33,7 @@ Rust comes with its own build system Cargo \cite{Cargo} \todo{Specify which vers
 %  \fi
 
 \section*{Available Libraries}
-We can obtain packages (= dependencies) from the central package registry crate.io \cite{Cargo}. 
+We can obtain packages (= dependencies) from the central package registry crates.io \cite{Cargo} by referencing external crates in our project dependencies.
 
 \section*{Software License}
 \lipsum[6]
@@ -46,10 +47,10 @@ We can obtain packages (= dependencies) from the central package registry crate.
 %\fi %comment me out
 
 \begin{thebibliography}{9}
-\bibitem{Rust} \emph{The Rust Programming Language}. Available: https://www.rust-lang.org/en-US/index.html [Accessed: May 2018].
-\bibitem{Cargo} \emph{The Cargo Book}. Available: https://doc.rust-lang.org/cargo/index.html [Accessed: May 2018].
-\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: https://doc.rust-lang.org/stable/book/second-edition/ [Accessed: May 2018].
-\bibitem{Crate} \emph{crates.io Rust Package Registry}. Available: https://crates.io/ [Accessed: May 2018].
+\bibitem{Rust} \emph{The Rust Programming Language}. Available: \url{https://www.rust-lang.org/en-US/index.html} [Accessed: May 2018].
+\bibitem{Cargo} \emph{The Cargo Book}. Available: \url{https://doc.rust-lang.org/cargo/index.html }[Accessed: May 2018].
+\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: \url{https://doc.rust-lang.org/stable/book/second-edition/} [Accessed: May 2018].
+\bibitem{Crate} \emph{crates.io Rust Package Registry}. Available: \url{https://crates.io/} [Accessed: May 2018].
 \end{thebibliography}
 
 \end{document}
