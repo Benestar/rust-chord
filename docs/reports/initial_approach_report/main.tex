@@ -33,12 +33,10 @@ Rust supports writing automated unit and integration tests natively and with Car
 Furthermore, Rust ensures by its language design that a lot of common bugs cannot occur. It does not allow invalid memory access such as use after free or null pointers and its strong type system guarantees that all type errors are caught at compile time.
 
 \section*{Available Libraries}
-\todo{explain crates.io}
-We can obtain packages (= dependencies) from the central package registry crates.io \cite{Crates} by referencing external crates in our project dependencies.
+The Rust standard library supports the usual network functionality like opening and listening for TCP connections and writing bytes. For more advanced functionality, one can use packages which are called ``crates'' in the context of Rust. There exists a big package registry called ``Crates.io'' \cite{Crates} which contains a lot of useful libraries. However, as with all unmoderated package registries we have to be careful which packages to include to not download malicious code. If one specific feature is not available through a crate, one can also create bindings to existing C libraries.
 
 \section*{Software License}
 We decided to publish our project under the GNU Affero General Public License (AGPL) version 3. \cite{AGPL} It is a free software license enforcing the copyleft principle. This means that peers who make changes to the code are required to publish it under the same license. Improvements to the software are therefore given back to the open source community and made publicly available. \todo{zitieren.}
-
 
 \section*{Previous Programming Experience within the Team}
 \todo{jeder für sich}
