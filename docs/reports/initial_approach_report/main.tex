@@ -17,48 +17,37 @@ Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 05/25/18
 We are Benedikt Seidl and Stefan Su, both studying Informatics in the sixth semester of our Bachelor's degree. As a team name we chose ``Rhodium'' \footnote{Rhodium is the element with atomic number 45.} and will be working on the Distributed Hash Table (DHT) project.
 
 \section*{Programming Language}
-We decided to use Rust \cite{Rust} to implement the DHT. Rust is a modern system programming language with features known from high level programming languages. It includes a strong type system and supports object orientation as well as functional programming. This allows to write safe and fast code on a high abstraction level. One does not have to pay for this with runtime costs like garbage collection or interpreters as Rust compiles to native LLVM code using zero-cost abstractions. \cite{RustFAQ}
+We decided to use Rust \cite{Rust} to implement the DHT. Rust is a modern system programming language with features known from high level programming languages. It includes a strong type system and supports object orientation as well as functional programming. This allows to write safe and fast code on a high abstraction level. One does not have to pay for this with runtime costs like garbage collection or interpreters as Rust compiles to native LLVM code using zero-cost abstractions \cite{RustFAQ}.
 
 \section*{Operating System}
 As operating systems, we use macOS and Linux which have the advantage of being Unix-based and thus supporting most development tools and libraries that may be needed during development. However, since Rust supports all major operating systems, it should also be possible to run the software under Windows, at least as long as we do not require any special libraries.
 
 \section*{Build System}
-Rust comes with its own build system called ``Cargo''. \cite{CargoBook} Cargo serves as a build tool but can do much more. It only compiles files that have changed since the last compilation. Furthermore, it serves as a test runner, can create HTML documentation based on inline comments and manages the dependencies of our project.
-
+Rust comes with its own build system called ``Cargo'' \cite{CargoBook}. Cargo serves as a build tool but can do much more. It only compiles files that have changed since the last compilation. Furthermore, it serves as a test runner, can create HTML documentation based on inline comments and manages the dependencies of our project.
 Since Cargo is so easy to setup, we currently do not plan to provide further build files for Docker or Vagrant. If it turns out that our build process is more complicated than expected, we can still integrate a more elaborate build system.
 
 \section*{Quality Measures}
 Rust supports writing automated unit and integration tests natively and with Cargo it is a breeze to run them. By applying the concept of test driven development (TDD) we make sure that our code matches the intended design. We also aspire to maintain a high test coverage.
-
-Furthermore, Rust ensures by its language design that a lot of common bugs cannot occur. It does not allow invalid memory access such as use after free or null pointers and its strong type system guarantees that all type errors are caught at compile time.
+Furthermore, Rust ensures by its language design that a lot of common bugs cannot occur. It does not allow invalid memory access such as use after free or null pointers and its strong type system guarantees that all type errors are caught at compile time \cite{RustBook}.
 
 \section*{Available Libraries}
-The Rust standard library supports the usual network functionality like opening and listening for TCP connections and writing bytes. For more advanced functionality, one can use packages which are called ``crates'' in the context of Rust. There exists a big package registry called ``Crates.io'' \cite{Crates} which contains a lot of useful libraries. However, as with all unmoderated package registries we have to be careful which packages to include to not download malicious code. If one specific feature is not available through a crate, one can also create bindings to existing C libraries.
+The Rust standard library supports the usual network functionality like opening and listening for TCP connections and writing bytes. For more advanced functionality, one can use packages which are called ``crates'' in the context of Rust.
+There exists a extensive package registry called ``Crates.io'' \cite{Crates} which contains a lot of useful libraries. However, as with all unmoderated package registries we have to be careful which packages to include to not download malicious code. If one specific feature is not available through a crate, one can also create bindings to existing C libraries.
 
 \section*{Software License}
-We decided to publish our project under the GNU Affero General Public License (AGPL) version 3. \cite{AGPL} It is a free software license enforcing the copyleft principle. This means that peers who make changes to the code are required to publish it under the same license. Improvements to the software are therefore given back to the open source community and made publicly available. \todo{Cite this}
+We decided to publish our project under the GNU Affero General Public License (AGPL)  \cite{AGPL} version 3. It is a free software license enforcing the copyleft principle. This means that peers who make changes to the code are required to publish it under the same license. Improvements to the software are therefore given back to the open source community and have to be made publicly available.
 
 \section*{Previous Programming Experience within the Team}
-We have already known each other since the beginning of our studies and worked together on the Verleihtool \cite{verleihtool} \todo{Cite this} software project for the student council. Therefore we do not expect any specific difficulties in our working dynamic. 
-
-Through our networking course, we have acquired basic knowledge in dealing with networking protocols and TCP standards. We are steadily acquiring the benefits of the Rust language features throughout the course of this project.
+We already know each other since the beginning of our studies and worked together on the ``Verleihtool'' software project for the student council  \cite{verleihtool}. Therefore we do not expect any specific difficulties in our working dynamic.
+During our networking course, we have acquired basic knowledge in dealing with networking protocols and TCP standards. We plan to steadily learn the benefits of the Rust language features throughout the course of this project.
 
 
 \section*{Workload Sharing}
-For reporting, we are working on branches with our names while merging our changes into the master branch. During development however we plan on creating feature branches to isolate units of work. 
-
-Based on classical software engineering principles, we plan on dividing the project into smaller tasks in order to split the code into independent components. This allows us to work independently after defining our interfaces. 
+Based on classical software engineering principles, we plan on dividing the project into smaller tasks in order to split the code into independent components. This allows us to work independently after defining our common interfaces.
+Furthermore, we plan to work on individual branches but merge often into the master branch to integrate our changes continuously.
 
 
 \bibliographystyle{IEEEtran}
 \bibliography{../bibliography}
-
-%\begin{thebibliography}{9}
-%\bibitem{Rust} \emph{The Rust Programming Language}. Available: \url{https://www.rust-lang.org/en-US/index.html} [Accessed: May 2018].
-%\bibitem{RustFAQ} \emph{Frequently Asked Questions}. Available: \url{https://www.rust-lang.org/en-US/faq.html} [Accessed: May 2018].
-%\bibitem{Cargo} \emph{The Cargo Book}. Available: \url{https://doc.rust-lang.org/cargo/index.html }[Accessed: May 2018].
-%\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: \url{https://doc.rust-lang.org/stable/book/second-edition/} [Accessed: May 2018].
-%\bibitem{Crates} \emph{crates.io Rust Package Registry}. Available: \url{https://crates.io/} [Accessed: May 2018].
-%\end{thebibliography}
 
 \end{document}
