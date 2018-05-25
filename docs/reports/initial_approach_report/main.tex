@@ -23,7 +23,7 @@ We decided to use Rust \cite{Rust} to implement the DHT. Rust is a modern system
 As operating systems, we use macOS and Linux which have the advantage of being Unix-based and thus supporting most development tools and libraries that may be needed during development. However, since Rust supports all major operating systems, it should also be possible to run the software under Windows, at least as long as we do not require any special libraries.
 
 \section*{Build System}
-Rust comes with its own build system called ``Cargo''. \cite{Cargo} Cargo serves as a build tool but can do much more. It only compiles files that have changed since the last compilation. Furthermore, it serves as a test runner, can create HTML documentation based on inline comments and manages the depencies of our project.
+Rust comes with its own build system called ``Cargo''. \cite{CargoBook} Cargo serves as a build tool but can do much more. It only compiles files that have changed since the last compilation. Furthermore, it serves as a test runner, can create HTML documentation based on inline comments and manages the depencies of our project.
 
 Since Cargo is so easy to setup, we currently do not plan to provide further build files for Docker or Vagrant. If it turns out that our build process is more complicated than expected, we can still integrate a more elaborate build system.
 
@@ -50,12 +50,15 @@ We decided to publish our project under the GNU Affero General Public License (A
 %Make sure to change these
 %\fi %comment me out
 
-\begin{thebibliography}{9}
-\bibitem{Rust} \emph{The Rust Programming Language}. Available: \url{https://www.rust-lang.org/en-US/index.html} [Accessed: May 2018].
-\bibitem{RustFAQ} \emph{Frequently Asked Questions}. Available: \url{https://www.rust-lang.org/en-US/faq.html} [Accessed: May 2018].
-\bibitem{Cargo} \emph{The Cargo Book}. Available: \url{https://doc.rust-lang.org/cargo/index.html }[Accessed: May 2018].
-\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: \url{https://doc.rust-lang.org/stable/book/second-edition/} [Accessed: May 2018].
-\bibitem{Crates} \emph{crates.io Rust Package Registry}. Available: \url{https://crates.io/} [Accessed: May 2018].
-\end{thebibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{../bibliography}
+
+%\begin{thebibliography}{9}
+%\bibitem{Rust} \emph{The Rust Programming Language}. Available: \url{https://www.rust-lang.org/en-US/index.html} [Accessed: May 2018].
+%\bibitem{RustFAQ} \emph{Frequently Asked Questions}. Available: \url{https://www.rust-lang.org/en-US/faq.html} [Accessed: May 2018].
+%\bibitem{Cargo} \emph{The Cargo Book}. Available: \url{https://doc.rust-lang.org/cargo/index.html }[Accessed: May 2018].
+%\bibitem{RustBook} N. Matsakis, A. Turon. \emph{The Rust Programming Language}, 2nd edition. Available: \url{https://doc.rust-lang.org/stable/book/second-edition/} [Accessed: May 2018].
+%\bibitem{Crates} \emph{crates.io Rust Package Registry}. Available: \url{https://crates.io/} [Accessed: May 2018].
+%\end{thebibliography}
 
 \end{document}
