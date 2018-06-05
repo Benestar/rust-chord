@@ -68,21 +68,20 @@ pub struct Server<T, U> {
 }
 
 impl<T, U> Server<T, U>
-    where T: Fn(Connection) + Send + Sync, U: Fn(io::Error) + Send + Sync
+    where T: Fn(Connection) + Send + 'static,
+          U: Fn(io::Error) + Send + 'static
 {
     pub fn new(connection_handler: T, error_handler: U) -> Self {
         Self { connection_handler, error_handler }
     }
 
-    pub fn listen(&mut self, port: u16) -> Result<thread::JoinHandle<()>, Box<Error>> {
+    pub fn listen(self, port: u16) -> Result<thread::JoinHandle<()>, Box<Error>> {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         let listener = TcpListener::bind(addr)?;
 
         let handle = thread::spawn(move || {
             for result in listener.incoming() {
-                thread::spawn(|| {
-                    self.handle_incoming(result);
-                });
+                self.handle_incoming(result);
             }
         });
 
@@ -93,9 +92,9 @@ impl<T, U> Server<T, U>
         match result {
             Ok (stream) => {
                 let connection = Connection::from_stream(stream);
-                // TODO handle connection
+                (self.connection_handler)(connection)
             },
-            Err (e) => (self.error_handler)(e)
+            Err (error) => (self.error_handler)(error)
         }
     }
 }
