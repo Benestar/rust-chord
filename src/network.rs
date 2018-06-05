@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io;
 use std::io::prelude::*;
 use std::net::*;
 use std::thread;
@@ -52,31 +53,49 @@ impl Connection {
     }
 }
 
+/// A multithreaded server waiting for connections
 ///
+/// # Examples
 ///
+/// ```
+/// let server = Server::new(|con| /* ... */);
 ///
-pub struct Server {
-    thread: thread::JoinHandle<()>
+/// server.listen(8080);
+/// ```
+pub struct Server<T, U> {
+    connection_handler: T,
+    error_handler: U
 }
 
-impl Server {
-    pub fn listen(port: u16) -> Result<Server, Box<Error>> {
+impl<T, U> Server<T, U>
+    where T: Fn(Connection), U: Fn(io::Error)
+{
+    pub fn new(connection_handler: T, error_handler: U) -> Self {
+        Self { connection_handler, error_handler }
+    }
+
+    pub fn listen(&mut self, port: u16) -> Result<thread::JoinHandle<()>, Box<Error>> {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         let listener = TcpListener::bind(addr)?;
 
-        let thread = thread::spawn(move || {
-            for stream in listener.incoming() {
-                match stream {
-                    Ok (stream) => {
-                        let connection = Connection::from_stream(stream);
-                        // TODO handle connection
-                    },
-                    Err (e) => println!("Error: {}", e)
-                }
+        let handle = thread::spawn(|| {
+            for result in listener.incoming() {
+                thread::spawn(|| {
+                    self.handle_incoming(result);
+                });
             }
         });
 
-        Ok (Server { thread })
+        Ok (handle)
     }
 
+    fn handle_incoming(&mut self, result: io::Result<TcpStream>) {
+        match result {
+            Ok (stream) => {
+                let connection = Connection::from_stream(stream);
+                // TODO handle connection
+            },
+            Err (e) => (self.error_handler)(e)
+        }
+    }
 }
