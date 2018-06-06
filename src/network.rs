@@ -1,3 +1,4 @@
+use message::Message;
 use std::error::Error;
 use std::io;
 use std::io::prelude::*;
@@ -5,8 +6,7 @@ use std::net::*;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-
-use message::Message;
+use threadpool::ThreadPool;
 
 /// Send Message objects over a TCP connection
 ///
@@ -88,14 +88,16 @@ impl Server {
         Self { handler: Arc::new(handler) }
     }
 
-    pub fn listen(self, port: u16) -> Result<thread::JoinHandle<()>, Box<Error>> {
+    pub fn listen(self, port: u16, num_workers: usize) -> Result<thread::JoinHandle<()>, Box<Error>> {
         let addr = SocketAddr::from(([0, 0, 0, 0], port));
         let listener = TcpListener::bind(addr)?;
 
         let handle = thread::spawn(move || {
+            let pool = ThreadPool::new(num_workers);
+
             for result in listener.incoming() {
                 let handler = self.handler.clone();
-                thread::spawn(move || {
+                pool.execute(move || {
                     handler.handle_incoming(result);
                 });
             }
