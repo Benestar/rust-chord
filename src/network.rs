@@ -2,6 +2,7 @@ use std::error::Error;
 use std::io;
 use std::io::prelude::*;
 use std::net::*;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
@@ -58,21 +59,33 @@ impl Connection {
 /// # Examples
 ///
 /// ```
-/// let server = Server::new(|con| /* ... */);
+/// let server = Server::new(Box::new(handler));
 ///
-/// server.listen(8080);
+/// let handle = server.listen(8080);
 /// ```
-pub struct Server<T, U> {
-    connection_handler: T,
-    error_handler: U
+pub struct Server {
+    handler: Arc<Box<ServerHandler + Send + Sync>>
 }
 
-impl<T, U> Server<T, U>
-    where T: Fn(Connection) + Send + 'static,
-          U: Fn(io::Error) + Send + 'static
-{
-    pub fn new(connection_handler: T, error_handler: U) -> Self {
-        Self { connection_handler, error_handler }
+pub trait ServerHandler {
+    fn handle_connection(&self, connection: Connection);
+
+    fn handle_error(&self, error: io::Error);
+
+    fn handle_incoming(&self, result: io::Result<TcpStream>) {
+        match result {
+            Ok (stream) => {
+                let connection = Connection::from_stream(stream);
+                self.handle_connection(connection)
+            },
+            Err (error) => self.handle_error(error)
+        }
+    }
+}
+
+impl Server {
+    pub fn new(handler: Box<ServerHandler + Send + Sync>) -> Self {
+        Self { handler: Arc::new(handler) }
     }
 
     pub fn listen(self, port: u16) -> Result<thread::JoinHandle<()>, Box<Error>> {
@@ -81,20 +94,13 @@ impl<T, U> Server<T, U>
 
         let handle = thread::spawn(move || {
             for result in listener.incoming() {
-                self.handle_incoming(result);
+                let handler = self.handler.clone();
+                thread::spawn(move || {
+                    handler.handle_incoming(result);
+                });
             }
         });
 
         Ok (handle)
-    }
-
-    fn handle_incoming(&self, result: io::Result<TcpStream>) {
-        match result {
-            Ok (stream) => {
-                let connection = Connection::from_stream(stream);
-                (self.connection_handler)(connection)
-            },
-            Err (error) => (self.error_handler)(error)
-        }
     }
 }
