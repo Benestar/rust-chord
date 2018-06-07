@@ -12,7 +12,7 @@ pub enum Message {
 }
 
 impl Message {
-    pub fn new(buffer: &[u8]) -> Result<Message, Box<Error>> {
+    pub fn new(buffer: &[u8]) -> Result<Self, Box<Error>> {
         let mut cursor = Cursor::new(&buffer);
         let size = cursor.read_u16::<NetworkEndian>()? as usize;
         let msg_type = cursor.read_u16::<NetworkEndian>()?;
@@ -24,7 +24,7 @@ impl Message {
         }
     }
 
-    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> Result<Message, Box<Error>> {
+    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> Result<(), Box<Error>> {
         panic!("not implemented")
     }
 }

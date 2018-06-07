@@ -5,3 +5,4 @@ authors = ["bene"]
 
 [dependencies]
 byteorder = "1.2.3"
+threadpool = "1.7.1"

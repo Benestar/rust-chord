@@ -1,5 +1,5 @@
 extern crate byteorder;
+extern crate threadpool;
 
-mod client;
 mod message;
-mod server;
+mod network;
