@@ -1,0 +1,94 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{comment} % enables the use of multi-line comments (\ifx \fi) 
+\usepackage{lipsum} %This package just generates Lorem Ipsum filler text. 
+\usepackage{fullpage} % changes the margin
+\usepackage{todonotes}
+\usepackage{hyperref}
+
+%\documentclass[border=10pt,png]{standalone}
+\usepackage{bytefield}
+
+\begin{document}
+%Header-Make sure you update this information!!!!
+\noindent
+\large\textbf{VoidPhone Project} \hfill \textbf{Initial Approach Report} \\
+\normalsize P2PSEC (IN2194)  \hfill Team 45 - Rhodium\\
+Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su \\
+Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 05/25/18
+
+\section*{Process Architecture}
+
+
+\section*{Inter-module protocol}
+Some sample message formats.
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT PUT}} \\
+			\bitbox{16}{TTL} & \bitbox{8}{replication} & \bitbox{8}{reserved}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{DHT PUT message}
+	\label{DHTPUT}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT GET}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{DHT GET message}
+	\label{DHTGET}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT SUCCESS}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{DHT SUCCESS message}
+	\label{DHTSUCCESS}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT FAILURE}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{DHT FAILURE message}
+	\label{DHTFAILURE}
+\end{figure}
+
+%\bibliographystyle{IEEEtran}
+%\bibliography{../bibliography}
+
+\end{document}
