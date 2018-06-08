@@ -26,7 +26,9 @@ We distinguish between the api interface which is used to communicate with other
 
 \subsection*{Application Architecture}
 
-To realize the distributed hash table (DHT) we will implement the \textit{Chord} protocol. The central aspect of Chord is to provided key-based routing. This means to map a given key to a node in the network.
+To realize the distributed hash table we will implement the \textit{Chord} protocol. The central aspect of Chord is to provide key-based routing. This means to map a given key to a node in the network \cite{Chord}. The important aspects are load balancing such that all nodes store approximately the same amount of data, failure handling and recovery as described in a later section and efficiency in the routing process.
+
+On top of this core functionality, we can implement a file storage system which uses Chord to find one or several peers to store a file for a given key. By separating these to layers of functionality, we can keep our routing implementation as simple as possible and perform the file storage operations separately. This also allows to implement redundancy and error handling on a higher level.
 
 \subsection*{Process Architecture}
 
