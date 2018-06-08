@@ -26,7 +26,7 @@ Some sample message formats.
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
 		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT PUT}} \\
+			\bitbox{16}{size} & \bitbox{16}{\texttt{FIND PEER}} \\
 			\bitbox{16}{TTL} & \bitbox{8}{replication} & \bitbox{8}{reserved}
 		\end{rightwordgroup} \\
 		\wordbox[lrt]{1}{key (256 bits)} \\
@@ -45,7 +45,7 @@ Some sample message formats.
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
 		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT GET}}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER GET}}
 		\end{rightwordgroup} \\
 		\wordbox[lrt]{1}{key (256 bits)} \\
 		\skippedwords \\
@@ -87,6 +87,14 @@ Some sample message formats.
 	\caption{DHT FAILURE message}
 	\label{DHTFAILURE}
 \end{figure}
+There are several cases that may occur:
+\begin{enumerate}
+	\item No module is running on the port that we appointed.
+	\item Another service is running on our DHT port that possesses uncompliant message formats.
+	\item Another service is running on our DHT port that just happens to use the same message types that we defined.
+\end{enumerate}
+For our implementation we only need to actively mitigate case 3., as there are no consequences that would influence the behavior of our module in case 1. and 2. respectively. In case 1., we would not receive any response message and in case 2. we wouldn't be able to process messages coming back from the foreign service anyway. Case 3. however would result in unpredictable behavior, if the message types of the foreign service were to align ours and we would start processing unknown, possibly malicious payloads. For this, we add a magic number field to our message formats \todo{Magic numbers are no secret.., proof-of-work?}
+
 
 %\bibliographystyle{IEEEtran}
 %\bibliography{../bibliography}
