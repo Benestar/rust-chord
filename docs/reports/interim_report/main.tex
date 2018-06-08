@@ -1,0 +1,307 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{comment} % enables the use of multi-line comments (\ifx \fi) 
+\usepackage{lipsum} %This package just generates Lorem Ipsum filler text. 
+\usepackage{fullpage} % changes the margin
+\usepackage{todonotes}
+\usepackage{hyperref}
+\usepackage{float} % to force figure placement
+
+%\documentclass[border=10pt,png]{standalone}
+\usepackage{bytefield}
+
+\begin{document}
+%Header-Make sure you update this information!!!!
+\noindent
+\large\textbf{VoidPhone Project} \hfill \textbf{Interim Report}\\
+\normalsize B2BSEC (IN2194)  \hfill Team 45 - Rhodium\\
+Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su\\
+Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 06/08/18
+
+\section{Introduction}
+
+In this document, we describe the planned design and implementation of our distributed hash table (DHT) module for the VoidPhone Project. A DHT allows to store key-value pairs in a distributed network of peers. No peer has to store the whole hash table but every node in the network provides some storage and computing capacity to realize a functional system \footnote{We use ``peer'' and ``node'' as synonyms throughout this document. In the context of networks and graphs, we usually talk about nodes while on the implementation level they are called peers.}.
+
+We distinguish between the api interface which is used to communicate with other modules on the same peer and the peer-to-peer or inter-module interface which allows the DHT modules on different peers to interact. The DHT provides two operations via its api interface, namely PUT and GET, which are used to store a value under a given key and later obtain the value for this key. The peer-to-peer protocol is more complicated and will be discussed in this document after introducing our architecture design.
+
+\section{Architecture Design}
+
+\subsection{Application Architecture}
+
+To realize the distributed hash table we will implement the \textit{Chord} protocol. The central aspect of Chord is to provide a distributed lookup method. This means to map a given key to a node in the network \cite{Chord}. The important aspects are load balancing such that all nodes store approximately the same amount of data, failure handling and recovery as described in a later section and efficiency in the routing process.
+
+On top of this core functionality, we can implement a file storage system which uses Chord to find one or several peers to store a file for a given key. By separating these to layers of functionality, we can keep our routing implementation as simple as possible and perform the file storage operations separately. This also allows to implement redundancy and error handling on a higher level.
+
+\subsection{Process Architecture}
+
+Our DHT implementation will be based on TCP for both the api interface and the peer-to-peer communication. Therefore, we listen on two ports given in the config for the two interfaces and wait for incoming connections in two event loops.
+
+Each incoming request should be handled as fast as possible. Therefore we want to use parallelization to balance the load on several cores. This can be achieved by several means, for example starting several processes or using multi-threading.
+Using multiple processes makes sense when there is little communication needed between each process since inter-process communication is quite expensive.
+
+However, since we need to work on shared memory between requests and also because we expect each request to only take very short to process, our preferred solution for parallelization is multi-threading. For this purpose, we use the thread pool pattern which creates a given number of worker threads and handles jobs from a job queue. Whenever a request reaches our server, it creates a new task to handle this request and adds it to the queue. This allows us to work concurrently while not having the overhead of spawning too many threads.
+
+% using thread pool to parallelize handling of incoming connecitons
+% no separate processes to avoid inter-process communication overhead
+
+% Same modules and structs for api and p2p protocols
+
+
+\section{Inter-module protocol}
+
+% We use Chord (key based routing protocol) based on consistent hashing
+% blablabla (Paper zitieren)
+
+As already mentioned, we implement the Chord protocol as described in the paper by Stoica et al. \cite{Chord}. In the following section we define the different message formats used by our implementation. After that, we explain which authentication and failure handling mechanisms we plan to implement.
+
+\subsection{Message formats}
+
+We divide our message formats in two sections, according to the distinction we made in the introduction of this document. First we define the high level storage related message types which operate on direct TCP connections. After that we introduce our lookup protocol messages which allow us to find nodes in the network efficiently.
+
+The messages defined in this document are subject to change in case we want to make improvements to our design. In that case, we will explain our reasons in the final report.
+
+\subsubsection{STORAGE GET}
+
+This message can be sent to a peer which is responsible for the given key. Its ip address has to be known already. The peer looks whether it has stored a value for the given key and returns it in a STORAGE GET SUCCESS message \ref{STORAGEGETSUCCESS}.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE GET message}
+	\label{STORAGEGET}
+\end{figure}
+
+\subsubsection{STORAGE PUT}
+
+To store a message at a specific peer of which the ip address is already known, one can send this message. The peer should answer with a STORAGE PUT SUCCESS message \ref{STORAGEPUTSUCCESS} if the operation succeeded.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT}} \\
+			\bitbox{16}{TTL} & \bitbox{8}{replication} & \bitbox{8}{reserved}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE PUT message}
+	\label{STORAGEPUT}
+\end{figure}
+
+\subsubsection{STORAGE GET SUCCESS}
+
+If after a STORAGE GET \ref{STORAGEGET} message the key was found, the peer should reply with the corresponding value attached to this message.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET SUCCESS}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE GET SUCCESS message}
+	\label{STORAGEGETSUCCESS}
+\end{figure}
+
+\subsubsection{STORAGE PUT SUCCESS}
+
+After a successful STORAGE PUT \ref{STORAGEPUT} operation, the peer should reply with this success message. The hash of the value should be appended to this message to ensure validity. It is still to be defined which hash function should be used.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT SUCCESS}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value hash} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE PUT SUCCESS message}
+	\label{STORAGEPUTSUCCESS}
+\end{figure}
+
+\subsubsection{STORAGE FAILURE}
+
+If a STORAGE GET \ref{STORAGEGET} or STORAGE PUT \ref{STORAGEPUT} fails for some reason, this message should be sent back. However, one cannot rely on a failure message being sent back since there can also be timeouts or other issues.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE FAILURE}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE FAILURE message}
+	\label{STORAGEFAILURE}
+\end{figure}
+
+\subsubsection{PEER FIND}
+
+This message initiates a lookup for a node responsible for the given identifier. If the receiving peer is not responsible for the ID, it is expected to forward this message to the next best node without modifying the \textit{reply-to} field. This can be implemented using finger tables.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER FIND}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{identifier} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{reply-to (128 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{PEER FIND message}
+	\label{PEERFIND}
+\end{figure}
+
+\subsubsection{PEER FOUND}
+
+If, after a PEER FIND \ref{PEERFIND} operation, a node has been found which is responsible for the given identifier, that peer should reply with this message.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER FOUND}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{identifier} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} 
+	\end{bytefield}
+	\caption{PEER FOUND message}
+	\label{PEERFOUND}
+\end{figure}
+
+\subsubsection{PREDECESSOR GET}
+
+This message allows to query the predecessor of some other peer.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR GET}}
+		\end{rightwordgroup}
+	\end{bytefield}
+	\caption{PREDECESSOR GET message}
+	\label{PREDECESSORGET}
+\end{figure}
+
+\subsubsection{PREDECESSOR REPLY}
+
+When a peer receives a PREDECESSOR GET message, it is expected to reply with this message.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR REPLY}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{ip address (128 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{}
+	\end{bytefield}
+	\caption{PREDECESSOR REPLY message}
+	\label{PREDECESSORREPLY}
+\end{figure}
+
+\subsubsection{PREDECESSOR SET}
+
+To tell some peer about a new predecessor, this message can be used. The receiving peer is required to check whether it actually should update its predecessor value.
+
+\begin{figure}[H]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR SET}}
+		\end{rightwordgroup}
+	\end{bytefield}
+	\caption{PREDECESSOR SET message}
+	\label{PREDECESSORSET}
+\end{figure}
+
+\subsection{Authentication}
+
+When a new peer $p$ joins the network, both the bootstrap peer and $p$ need to verify whether they are running the correct software. There are several cases that may occur:
+
+\begin{enumerate}
+	\item No module is running on the port that we appointed.
+	\item Another service is running on our DHT port that possesses uncompliant message formats. 
+	\item Another service is running on our DHT port that just happens to use the same message types that we defined.
+\end{enumerate}
+
+For our implementation we only need to actively mitigate case 3, as there are no consequences that would influence the behavior of our module in case 1 and 2 respectively. In case 1 we would not receive any response message and in case 2 we would not be able to process messages coming back from the foreign service anyway. Case 3 however would result in unpredictable behavior if the message types of the foreign service were to align ours and we would start processing unexpected payloads. This could be mitigated by establishing handshakes for every communication request. However, this is very expensive due to the messaging overhead. Alternatively, we can add a magic number field to our message format which should be unique to our application.
+
+\subsection{Failure handling}
+Chord's stabilization protocol protocol handles situations such as peers joining, failing or leaving the system. Maintaining correct successor pointers will guarantee the correctness of finding predecessors of a node. This is achieved by keeping a ``successor-list'' of the $r$ nearest successors on the identifier ring. That way, ``stabilize'' will fix finger table entries and references pointing to the failed node. The successor list would also help with the objective of maintaining redundancy while storing key-value pairs by informing the storage layer of the state of the successors and therefore where the values need to be replicated to \cite{Chord}. 
+
+
+\bibliographystyle{IEEEtran}
+\bibliography{../bibliography}
+
+\pagebreak
+
+\renewcommand\thesection{\Alph{section}}
+\setcounter{section}{0}
+\section{Message Types}
+
+This enumeration defines the messages types. All numbers are in decimal system.
+
+\begin{enumerate}
+	\setcounter{enumi}{1000}
+	\item \texttt{STORAGE GET}
+	\item \texttt{STORAGE PUT}
+	\item \texttt{STORAGE GET SUCCESS}
+	\item \texttt{STORAGE PUT SUCCESS}
+	\item \texttt{STORAGE FAILURE}
+\end{enumerate}
+
+$\vdots$
+
+\begin{enumerate}
+	\setcounter{enumi}{1049}
+	\item (reserved until here for Storage messages)
+	\item \texttt{PEER FIND}
+	\item \texttt{PEER FOUND}
+	\item \texttt{PREDECESSOR GET}
+	\item \texttt{PREDECESSOR REPLY}
+	\item \texttt{PREDECESSOR SET}
+\end{enumerate}
+
+\end{document}
