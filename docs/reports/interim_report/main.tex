@@ -4,6 +4,7 @@
 \usepackage{fullpage} % changes the margin
 \usepackage{todonotes}
 \usepackage{hyperref}
+\usepackage{float} % to force figure placement
 
 %\documentclass[border=10pt,png]{standalone}
 \usepackage{bytefield}
@@ -56,7 +57,7 @@ However, since we need to work on shared memory between requests and also becaus
 
 Some sample message formats.
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -71,7 +72,7 @@ Some sample message formats.
 	\label{STORAGEGET}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -90,7 +91,7 @@ Some sample message formats.
 	\label{STORAGEPUT}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -108,7 +109,7 @@ Some sample message formats.
 	\label{STORAGEGETSUCCESS}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -126,7 +127,7 @@ Some sample message formats.
 	\label{STORAGEPUTSUCCESS}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -143,7 +144,7 @@ Some sample message formats.
 
 \subsubsection*{Lookup}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -161,7 +162,7 @@ Some sample message formats.
 	\label{PEERFIND}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -176,7 +177,7 @@ Some sample message formats.
 	\label{PEERFOUND}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -188,7 +189,7 @@ Some sample message formats.
 	\label{PREDECESSORGET}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
@@ -203,7 +204,7 @@ Some sample message formats.
 	\label{PREDECESSORREPLY}
 \end{figure}
 
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
