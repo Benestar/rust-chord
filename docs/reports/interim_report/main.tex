@@ -238,7 +238,24 @@ Chord's stabilization protocol protocol handles situations such as peers joining
 \pagebreak
 
 \section*{A. Message Types}
-
-\todo{TODO}
+This enumeration defines the messages types. All numbers are in decimal system.
+\begin{enumerate}
+	\setcounter{enumi}{1000}
+	\item \texttt{STORAGE GET}
+	\item \texttt{STORAGE PUT}
+	\item \texttt{STORAGE GET SUCCESS}
+	\item \texttt{STORAGE PUT SUCCESS}
+	\item \texttt{STORAGE FAILURE}
+\end{enumerate}
+$\vdots$
+\begin{enumerate}
+	\setcounter{enumi}{1049}
+	\item (reserved until here for Storage messages)
+	\item \texttt{PEER FIND}
+	\item \texttt{PEER FOUND}
+	\item \texttt{PREDECESSOR GET}
+	\item \texttt{PREDECESSOR REPLY}
+	\item \texttt{PREDECESSOR SET}
+\end{enumerate}
 
 \end{document}
