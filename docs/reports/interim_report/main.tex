@@ -16,9 +16,21 @@
 Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su\\
 Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 06/08/18
 
-\section*{Process Architecture}
+\section*{Introduction}
 
-Our DHT implementation will be based on TCP connections for both the api interface and the peer-to-peer communication. Therefore, we listen on two ports given in the config for the two interfaces and wait for incoming connections in two event loops.
+In this document, we describe the planned design and implementation of our distributed hash table (DHT) module for the VoidPhone Project. A DHT allows to store key-value pairs in a distributed network of peers. No peer has to store the whole hash table but every node in the network provides some storage and computing capacity to realize a functional system \footnote{We use ``peer'' and ``node'' as synonyms throughout this document. In the context of networks and graphs, we usually talk about nodes while on the implementation level they are called peers.}.
+
+We distinguish between the api interface which is used to communicate with other modules on the same peer and the peer-to-peer or inter-module interface which allows the DHT modules on different peers to interact. The DHT provides two operations via its api interface, namely PUT and GET, which are used to store a value under a given key and later obtain the value for this key. The peer-to-peer protocol is more complicated and will be discussed in this document after introducing our architecture design.
+
+\section*{Architecture Design}
+
+\subsection*{Application Architecture}
+
+To realize the distributed hash table (DHT) we will implement the \textit{Chord} protocol. The central aspect of Chord is to provided key-based routing. This means to map a given key to a node in the network.
+
+\subsection*{Process Architecture}
+
+Our DHT implementation will be based on TCP for both the api interface and the peer-to-peer communication. Therefore, we listen on two ports given in the config for the two interfaces and wait for incoming connections in two event loops.
 
 Each incoming request should be handled as fast as possible. Therefore we want to use parallelization to balance the load on several cores. This can be achieved by several means, for example starting several processes or using multi-threading.
 Using multiple processes makes sense when there is little communication needed between each process since inter-process communication is quite expensive.
