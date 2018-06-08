@@ -52,13 +52,31 @@ However, since we need to work on shared memory between requests and also becaus
 
 \subsection*{Message formats}
 
+\subsubsection*{Storage}
+
 Some sample message formats.
+
 \begin{figure}[h!]
 	\centering
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
 		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{FIND PEER}} \\
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE GET message}
+	\label{STORAGEGET}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT}} \\
 			\bitbox{16}{TTL} & \bitbox{8}{replication} & \bitbox{8}{reserved}
 		\end{rightwordgroup} \\
 		\wordbox[lrt]{1}{key (256 bits)} \\
@@ -68,8 +86,8 @@ Some sample message formats.
 		\skippedwords \\
 		\wordbox[lrb]{1}{} \\
 	\end{bytefield}
-	\caption{DHT PUT message}
-	\label{DHTPUT}
+	\caption{STORAGE PUT message}
+	\label{STORAGEPUT}
 \end{figure}
 
 \begin{figure}[h!]
@@ -77,22 +95,7 @@ Some sample message formats.
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
 		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER GET}}
-		\end{rightwordgroup} \\
-		\wordbox[lrt]{1}{key (256 bits)} \\
-		\skippedwords \\
-		\wordbox[lrb]{1}{} \\
-	\end{bytefield}
-	\caption{DHT GET message}
-	\label{DHTGET}
-\end{figure}
-
-\begin{figure}[h!]
-	\centering
-	\begin{bytefield}[bitwidth=0.8em]{32}
-		\bitheader{0,7,8,15,16,23,24,31} \\
-		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT SUCCESS}}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET SUCCESS}}
 		\end{rightwordgroup} \\
 		\wordbox[lrt]{1}{key (256 bits)} \\
 		\skippedwords \\
@@ -101,8 +104,8 @@ Some sample message formats.
 		\skippedwords \\
 		\wordbox[lrb]{1}{} \\
 	\end{bytefield}
-	\caption{DHT SUCCESS message}
-	\label{DHTSUCCESS}
+	\caption{STORAGE GET SUCCESS message}
+	\label{STORAGEGETSUCCESS}
 \end{figure}
 
 \begin{figure}[h!]
@@ -110,14 +113,106 @@ Some sample message formats.
 	\begin{bytefield}[bitwidth=0.8em]{32}
 		\bitheader{0,7,8,15,16,23,24,31} \\
 		\begin{rightwordgroup}{Message \\  Header}
-			\bitbox{16}{size} & \bitbox{16}{\texttt{DHT FAILURE}}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT SUCCESS}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{key (256 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{value hash} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{STORAGE PUT SUCCESS message}
+	\label{STORAGEPUTSUCCESS}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE FAILURE}}
 		\end{rightwordgroup} \\
 		\wordbox[lrt]{1}{key (256 bits)} \\
 		\skippedwords \\
 		\wordbox[lrb]{1}{} \\
 	\end{bytefield}
-	\caption{DHT FAILURE message}
-	\label{DHTFAILURE}
+	\caption{STORAGE FAILURE message}
+	\label{STORAGEFAILURE}
+\end{figure}
+
+\subsubsection*{Lookup}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER FIND}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{identifier} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+		\wordbox[lrt]{1}{reply-to (128 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} \\
+	\end{bytefield}
+	\caption{PEER FIND message}
+	\label{PEERFIND}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PEER FOUND}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{identifier} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{} 
+	\end{bytefield}
+	\caption{PEER FOUND message}
+	\label{PEERFOUND}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR GET}}
+		\end{rightwordgroup}
+	\end{bytefield}
+	\caption{PREDECESSOR GET message}
+	\label{PREDECESSORGET}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR REPLY}}
+		\end{rightwordgroup} \\
+		\wordbox[lrt]{1}{ip address (128 bits)} \\
+		\skippedwords \\
+		\wordbox[lrb]{1}{}
+	\end{bytefield}
+	\caption{PREDECESSOR REPLY message}
+	\label{PREDECESSORREPLY}
+\end{figure}
+
+\begin{figure}[h!]
+	\centering
+	\begin{bytefield}[bitwidth=0.8em]{32}
+		\bitheader{0,7,8,15,16,23,24,31} \\
+		\begin{rightwordgroup}{Message \\  Header}
+			\bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR SET}}
+		\end{rightwordgroup}
+	\end{bytefield}
+	\caption{PREDECESSOR SET message}
+	\label{PREDECESSORSET}
 \end{figure}
 
 \subsection*{Authentication}
