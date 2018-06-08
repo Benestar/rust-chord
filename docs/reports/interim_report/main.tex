@@ -11,15 +11,26 @@
 \begin{document}
 %Header-Make sure you update this information!!!!
 \noindent
-\large\textbf{VoidPhone Project} \hfill \textbf{Initial Approach Report} \\
+\large\textbf{VoidPhone Project} \hfill \textbf{Interim Report}\\
 \normalsize P2PSEC (IN2194)  \hfill Team 45 - Rhodium\\
-Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su \\
-Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 05/25/18
+Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su\\
+Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 06/08/18
 
 \section*{Process Architecture}
 
+% using thread pool to parallelize handling of incoming connecitons
+% no separate processes to avoid inter-process communication overhead
+
+% Same modules and structs for api and p2p protocols
+
 
 \section*{Inter-module protocol}
+
+% We use Chord (key based routing protocol) based on consistent hashing
+% blablabla (Paper zitieren)
+
+\subsection*{Message formats}
+
 Some sample message formats.
 \begin{figure}[h!]
 	\centering
@@ -87,13 +98,35 @@ Some sample message formats.
 	\caption{DHT FAILURE message}
 	\label{DHTFAILURE}
 \end{figure}
+
+\subsection*{Authentication}
+
+\todo{TODO}
+
+% Handshakes for every communication too expensive
+% When new node joins, it has to check whether the bootstrap node
+% runs the correct software.
+
 There are several cases that may occur:
+
 \begin{enumerate}
 	\item No module is running on the port that we appointed.
 	\item Another service is running on our DHT port that possesses uncompliant message formats.
 	\item Another service is running on our DHT port that just happens to use the same message types that we defined.
 \end{enumerate}
+
 For our implementation we only need to actively mitigate case 3., as there are no consequences that would influence the behavior of our module in case 1. and 2. respectively. In case 1., we would not receive any response message and in case 2. we wouldn't be able to process messages coming back from the foreign service anyway. Case 3. however would result in unpredictable behavior, if the message types of the foreign service were to align ours and we would start processing unknown, possibly malicious payloads. For this, we add a magic number field to our message formats \todo{Magic numbers are no secret.., proof-of-work?}
+
+\subsection*{Failure handling}
+
+\todo{TODO}
+
+\pagebreak
+
+\section*{A. Message Types}
+
+\todo{TODO}
+
 
 
 %\bibliographystyle{IEEEtran}
