@@ -18,6 +18,13 @@ Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 06/08/18
 
 \section*{Process Architecture}
 
+Our DHT implementation will be based on TCP connections for both the api interface and the peer-to-peer communication. Therefore, we listen on two ports given in the config for the two interfaces and wait for incoming connections in two event loops.
+
+Each incoming request should be handled as fast as possible. Therefore we want to use parallelization to balance the load on several cores. This can be achieved by several means, for example starting several processes or using multi-threading.
+Using multiple processes makes sense when there is little communication needed between each process since inter-process communication is quite expensive.
+
+However, since we need to work on shared memory between requests and also because we expect each request to only take very short to process, our preferred solution for parallelization is multi-threading. For this purpose, we use the thread pool pattern which creates a given number of worker threads and handles jobs from a job queue. Whenever a request reaches our server, it creates a new task to handle this request and adds it to the queue. This allows us to work concurrently while not having the overhead of spawning too many threads.
+
 % using thread pool to parallelize handling of incoming connecitons
 % no separate processes to avoid inter-process communication overhead
 
