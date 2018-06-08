@@ -12,7 +12,7 @@
 %Header-Make sure you update this information!!!!
 \noindent
 \large\textbf{VoidPhone Project} \hfill \textbf{Interim Report}\\
-\normalsize P2PSEC (IN2194)  \hfill Team 45 - Rhodium\\
+\normalsize B2BSEC (IN2194)  \hfill Team 45 - Rhodium\\
 Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su\\
 Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 06/08/18
 
@@ -121,19 +121,19 @@ Some sample message formats.
 \end{figure}
 
 \subsection*{Authentication}
+
 When a new peer $p$ joins the network, both the bootstrap peer and $p$ need to verify whether they are running the correct software. There are several cases that may occur:
-\todo{TODO}
+
 \begin{enumerate}
 	\item No module is running on the port that we appointed.
-	\item Another service is running on our DHT port that possesses uncompliant message formats.
+	\item Another service is running on our DHT port that possesses uncompliant message formats. 
 	\item Another service is running on our DHT port that just happens to use the same message types that we defined.
 \end{enumerate}
 
-For our implementation we only need to actively mitigate case 3., as there are no consequences that would influence the behavior of our module in case 1. and 2. respectively. In case 1., we would not receive any response message and in case 2. we wouldn't be able to process messages coming back from the foreign service anyway. Case 3. however would result in unpredictable behavior, if the message types of the foreign service were to align ours and we would start processing unknown, possibly malicious payloads. Establishing handshakes for every communication request however is very expensive due to the messaging overhead. For this, we add a magic number field to our message formats \todo{Magic numbers are no secret.., proof-of-work?}
+For our implementation we only need to actively mitigate case 3, as there are no consequences that would influence the behavior of our module in case 1 and 2 respectively. In case 1 we would not receive any response message and in case 2 we would not be able to process messages coming back from the foreign service anyway. Case 3 however would result in unpredictable behavior if the message types of the foreign service were to align ours and we would start processing unexpected payloads. This could be mitigated by establishing handshakes for every communication request. However, this is very expensive due to the messaging overhead. Alternatively, we can add a magic number field to our message format which should be unique to our application.
 
 \subsection*{Failure handling}
-Chord's stabilization protocol protocol handles situations such as peers joining, failing or leaving the system \cite{Chord}. Maintaining correct successor pointers will guarantee the correctness of finding predecessors of a node. This is achieved by keeping a ``successor-list'' of the $r$ nearest successors on the identifier ring. That way, ``stabilize'' will fix finger table entries and references pointing to the failed node. The successor list would also help with the objective of maintaining redundancy while storing key-value pairs by informing the storage layer of the state of the successors and therefore where the values need to be replicated to \cite{Chord}. 
-\todo{TODO: mention store and chord layer?}
+Chord's stabilization protocol protocol handles situations such as peers joining, failing or leaving the system. Maintaining correct successor pointers will guarantee the correctness of finding predecessors of a node. This is achieved by keeping a ``successor-list'' of the $r$ nearest successors on the identifier ring. That way, ``stabilize'' will fix finger table entries and references pointing to the failed node. The successor list would also help with the objective of maintaining redundancy while storing key-value pairs by informing the storage layer of the state of the successors and therefore where the values need to be replicated to \cite{Chord}. 
 
 
 \bibliographystyle{IEEEtran}
