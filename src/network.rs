@@ -61,12 +61,13 @@ impl Connection {
 /// ```
 /// let server = Server::new(Box::new(handler));
 ///
-/// let handle = server.listen(8080);
+/// server.listen("127.0.0.1:80").expect("could not bind to port");
 /// ```
 pub struct Server {
     handler: Arc<Box<ServerHandler + Send + Sync>>
 }
 
+/// Interface to handle connections or errors from a TcpListener
 pub trait ServerHandler {
     fn handle_connection(&self, connection: Connection);
 
@@ -88,8 +89,7 @@ impl Server {
         Self { handler: Arc::new(handler) }
     }
 
-    pub fn listen(self, port: u16, num_workers: usize) -> Result<thread::JoinHandle<()>, Box<Error>> {
-        let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    pub fn listen<A: ToSocketAddrs>(self, addr: A, num_workers: usize) -> Result<thread::JoinHandle<()>, Box<Error>> {
         let listener = TcpListener::bind(addr)?;
 
         let handle = thread::spawn(move || {
