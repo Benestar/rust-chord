@@ -24,7 +24,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn open<A: ToSocketAddrs>(addrs: A, timeout_ms: u64) -> Result<Self, Box<Error>> {
+    pub fn open<A: ToSocketAddrs>(addrs: A, timeout_ms: u64) -> io::Result<Self> {
         let stream = TcpStream::connect(addrs)?;
 
         let timeout = Duration::from_millis(timeout_ms);
@@ -39,18 +39,18 @@ impl Connection {
         Self { stream, buffer }
     }
 
-    pub fn receive(&mut self) -> Result<Message, Box<Error>> {
-        let n = self.stream.read_to_end(&mut self.buffer)?;
-        Ok (Message::new(self.buffer.as_slice())?)
+    pub fn receive(&mut self) -> io::Result<Message> {
+        self.stream.read_to_end(&mut self.buffer)?;
+        Message::new(self.buffer.as_slice())
     }
 
-    pub fn send(&mut self, msg: &Message) -> Result<(), Box<Error>> {
-        let n = msg.write_bytes(&mut self.buffer)?;
-        Ok (self.stream.write_all(self.buffer.as_slice())?)
+    pub fn send(&mut self, msg: &Message) -> io::Result<()> {
+        msg.write_bytes(&mut self.buffer)?;
+        self.stream.write_all(self.buffer.as_slice())
     }
 
-    pub fn shutdown(&mut self) -> Result<(), Box<Error>> {
-        Ok (self.stream.shutdown(Shutdown::Both)?)
+    pub fn shutdown(&mut self) -> io::Result<()> {
+        self.stream.shutdown(Shutdown::Both)
     }
 }
 

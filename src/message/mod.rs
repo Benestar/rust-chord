@@ -1,10 +1,11 @@
-use std::io::Cursor;
+use byteorder::{NetworkEndian, ReadBytesExt};
+use std::fmt;
 use std::io;
+use std::io::Cursor;
 
-use byteorder::{ReadBytesExt, WriteBytesExt, NetworkEndian};
 
-mod api;
-mod p2p;
+pub mod api;
+pub mod p2p;
 
 /// The different message types supported by this module
 ///
@@ -98,3 +99,8 @@ impl Message {
     }
 }
 
+impl fmt::Debug for Message {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        unimplemented!()
+    }
+}
