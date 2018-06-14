@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::io::Cursor;
 use std::io::prelude::*;
 use std::io;
@@ -45,7 +44,7 @@ impl DhtPut {
 impl DhtGet {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         Ok(DhtGet { key })
     }
@@ -54,10 +53,10 @@ impl DhtGet {
 impl DhtSuccess {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         let mut value = Vec::new();
-        cursor.read_to_end(&mut value);
+        cursor.read_to_end(&mut value)?;
 
         Ok(DhtSuccess { key, value })
     }
@@ -66,7 +65,7 @@ impl DhtSuccess {
 impl DhtFailure {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         Ok(DhtFailure { key })
     }

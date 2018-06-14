@@ -1,9 +1,8 @@
-use std::error::Error;
 use std::io::Cursor;
 use std::io::prelude::*;
 use std::io;
 use std::net::IpAddr;
-use byteorder::{ReadBytesExt, WriteBytesExt, NetworkEndian};
+use byteorder::{ReadBytesExt, NetworkEndian};
 
 
 pub struct StorageGet {
@@ -52,7 +51,7 @@ pub struct PredecessorSet;
 impl StorageGet {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         Ok(StorageGet { key })
     }
@@ -79,7 +78,7 @@ impl StoragePut {
 impl StorageGetSuccess {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         let mut value = Vec::new();
         cursor.read_to_end(&mut value)?;
@@ -91,10 +90,10 @@ impl StorageGetSuccess {
 impl StoragePutSuccess {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         let mut value_hash = [0; 32];
-        cursor.read_exact(&mut value_hash);
+        cursor.read_exact(&mut value_hash)?;
 
         Ok(StoragePutSuccess { key, value_hash })
     }
@@ -103,7 +102,7 @@ impl StoragePutSuccess {
 impl StorageFailure {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut key = [0; 32];
-        cursor.read_exact(&mut key);
+        cursor.read_exact(&mut key)?;
 
         Ok(StorageFailure { key })
     }
@@ -112,10 +111,10 @@ impl StorageFailure {
 impl PeerFind {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut identifier = [0; 32];
-        cursor.read_exact(&mut identifier);
+        cursor.read_exact(&mut identifier)?;
 
         let mut ip_arr = [0; 16];
-        cursor.read_exact(&mut ip_arr);
+        cursor.read_exact(&mut ip_arr)?;
 
         let reply_to = IpAddr::from(ip_arr);
 
@@ -126,14 +125,14 @@ impl PeerFind {
 impl PeerFound {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut identifier = [0; 32];
-        cursor.read_exact(&mut identifier);
+        cursor.read_exact(&mut identifier)?;
 
         Ok(PeerFound{ identifier })
     }
 }
 
 impl PredecessorGet {
-    pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
+    pub fn parse(cursor: Cursor<&[u8]>) -> io::Result<Self> {
         Ok(PredecessorGet)
     }
 }
@@ -141,7 +140,7 @@ impl PredecessorGet {
 impl PredecessorReply {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
         let mut ip_arr = [0; 16];
-        cursor.read_exact(&mut ip_arr);
+        cursor.read_exact(&mut ip_arr)?;
 
         let ip_address = IpAddr::from(ip_arr);
 
@@ -150,7 +149,7 @@ impl PredecessorReply {
 }
 
 impl PredecessorSet {
-    pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
+    pub fn parse(cursor: Cursor<&[u8]>) -> io::Result<Self> {
         Ok(PredecessorSet)
     }
 }
