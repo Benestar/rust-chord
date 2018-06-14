@@ -1,4 +1,3 @@
-use std::error::Error;
 use std::io::Cursor;
 use std::io;
 
@@ -37,7 +36,7 @@ impl Message {
 
     const STORAGE_GET: u16 = 1000;
     const STORAGE_PUT: u16 = 1001;
-    const STORAGE_GET_SUCESS: u16 = 1002;
+    const STORAGE_GET_SUCCESS: u16 = 1002;
     const STORAGE_PUT_SUCCESS: u16 = 1003;
     const STORAGE_FAILURE: u16 = 1004;
 
@@ -58,33 +57,33 @@ impl Message {
         }
 
         let msg = match msg_type {
-            DHT_PUT =>
+            Self::DHT_PUT =>
                 Message::DhtPut(api::DhtPut::parse(cursor)?),
-            DHT_GET =>
+            Self::DHT_GET =>
                 Message::DhtGet(api::DhtGet::parse(cursor)?),
-            DHT_SUCCESS =>
+            Self::DHT_SUCCESS =>
                 Message::DhtSuccess(api::DhtSuccess::parse(cursor)?),
-            DHT_FAILURE =>
+            Self::DHT_FAILURE =>
                 Message::DhtFailure(api::DhtFailure::parse(cursor)?),
-            STORAGE_GET =>
+            Self::STORAGE_GET =>
                 Message::StorageGet(p2p::StorageGet::parse(cursor)?),
-            STORAGE_PUT =>
+            Self::STORAGE_PUT =>
                 Message::StoragePut(p2p::StoragePut::parse(cursor)?),
-            STORAGE_GET_SUCCESS =>
+            Self::STORAGE_GET_SUCCESS =>
                 Message::StorageGetSuccess(p2p::StorageGetSuccess::parse(cursor)?),
-            STORAGE_PUT_SUCCESS =>
+            Self::STORAGE_PUT_SUCCESS =>
                 Message::StoragePutSuccess(p2p::StoragePutSuccess::parse(cursor)?),
-            STORAGE_FAILURE =>
+            Self::STORAGE_FAILURE =>
                 Message::StorageFailure(p2p::StorageFailure::parse(cursor)?),
-            PEER_FIND =>
+            Self::PEER_FIND =>
                 Message::PeerFind(p2p::PeerFind::parse(cursor)?),
-            PEEER_FOUND =>
+            Self::PEER_FOUND =>
                 Message::PeerFound(p2p::PeerFound::parse(cursor)?),
-            PREDECESSOR_GET =>
+            Self::PREDECESSOR_GET =>
                 Message::PredecessorGet(p2p::PredecessorGet::parse(cursor)?),
-            PREDECESSOR_REPLY =>
+            Self::PREDECESSOR_REPLY =>
                 Message::PredecessorReply(p2p::PredecessorReply::parse(cursor)?),
-            PREDECESSOR_SET =>
+            Self::PREDECESSOR_SET =>
                 Message::PredecessorSet(p2p::PredecessorSet::parse(cursor)?),
             _ =>
                 // todo define own Error type
