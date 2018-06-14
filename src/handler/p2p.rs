@@ -2,14 +2,21 @@ use error::MessageError;
 use message::Message;
 use message::p2p::*;
 use network::{Connection, ServerHandler};
+use routing::Routing;
 use std::error::Error;
 use std::io;
+use std::sync::Mutex;
+use std::net::SocketAddr;
 
 pub struct P2PHandler {
-
+    routing: Mutex<Routing<SocketAddr>>
 }
 
 impl P2PHandler {
+    pub fn new(routing: Routing<SocketAddr>) -> Self {
+        Self { routing: Mutex::new(routing) }
+    }
+
     fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
         // 1. check if given key falls into range
 
@@ -39,16 +46,34 @@ impl P2PHandler {
         -> ::Result<()>
     {
         // 1. return the current predecessor with PREDECESSOR REPLY
-        unimplemented!()
+        let mut routing = self.routing.lock()
+            .or(Err("could not lock mutex"))?;
+
+        let pred = routing.get_predecessor();
+
+        let predecessor_reply = PredecessorReply { ip_address: pred.ip() };
+        con.send(&Message::PredecessorReply(predecessor_reply))?;
+
+        Ok(())
     }
 
     fn handle_predecessor_set(&self, mut con: Connection, predecessor_set: PredecessorSet)
         -> ::Result<()>
     {
-        // 1. check if the predecessor is closer than the previous predecessor
+        let peer_addr = con.peer_addr()?;
 
-        // 2. update the predecessor if necessary
-        unimplemented!()
+        let mut routing = self.routing.lock()
+            .or(Err("could not lock mutex"))?;
+
+        // 1. check if the predecessor is closer than the previous predecessor
+        if routing.is_closer_predecessor(&peer_addr) {
+            // 2. update the predecessor if necessary
+            routing.set_predecessor(peer_addr)
+        }
+
+        // TODO maybe check whether predecessor is actually still reachable?
+
+        Ok(())
     }
 
     fn handle_connection(&self, mut con: Connection) -> ::Result<()> {

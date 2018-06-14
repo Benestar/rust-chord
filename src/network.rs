@@ -1,5 +1,4 @@
 use message::Message;
-use std::error::Error;
 use std::io;
 use std::io::prelude::*;
 use std::net::*;
@@ -49,22 +48,17 @@ impl Connection {
         self.stream.write_all(self.buffer.as_slice())
     }
 
+    pub fn peer_addr(&self) -> io::Result<SocketAddr> {
+        self.stream.peer_addr()
+    }
+
+    pub fn local_addr(&self) -> io::Result<SocketAddr> {
+        self.stream.local_addr()
+    }
+
     pub fn shutdown(&mut self) -> io::Result<()> {
         self.stream.shutdown(Shutdown::Both)
     }
-}
-
-/// A multithreaded server waiting for connections
-///
-/// # Examples
-///
-/// ```
-/// let server = Server::new(Box::new(handler));
-///
-/// server.listen("127.0.0.1:80").expect("could not bind to port");
-/// ```
-pub struct Server {
-    handler: Arc<Box<ServerHandler + Send + Sync>>
 }
 
 /// Interface to handle connections or errors from a TcpListener
@@ -85,12 +79,27 @@ pub trait ServerHandler {
     }
 }
 
+/// A multithreaded server waiting for connections
+///
+/// # Examples
+///
+/// ```
+/// let server = Server::new(Box::new(handler));
+///
+/// server.listen("127.0.0.1:80").expect("could not bind to port");
+/// ```
+pub struct Server {
+    handler: Arc<Box<ServerHandler + Send + Sync>>
+}
+
 impl Server {
     pub fn new(handler: Box<ServerHandler + Send + Sync>) -> Self {
         Self { handler: Arc::new(handler) }
     }
 
-    pub fn listen<A: ToSocketAddrs>(self, addr: A, num_workers: usize) -> Result<thread::JoinHandle<()>, Box<Error>> {
+    pub fn listen<A: ToSocketAddrs>(self, addr: A, num_workers: usize)
+        -> io::Result<thread::JoinHandle<()>>
+    {
         let listener = TcpListener::bind(addr)?;
 
         let handle = thread::spawn(move || {
