@@ -1,7 +1,8 @@
 use std::io::Cursor;
 use std::io::prelude::*;
 use std::io;
-use byteorder::{ReadBytesExt, WriteBytesExt, NetworkEndian};
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+
 
 pub struct DhtPut {
     pub ttl: u16,
@@ -39,7 +40,19 @@ impl DhtPut {
 
         Ok(DhtPut { ttl, replication, key, value })
     }
+
+    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
+        buffer.write_u16::<NetworkEndian>(self.ttl)?;
+        buffer.write_u8(self.replication)?;
+        buffer.write_u8(0)?;
+        buffer.write(&self.key)?;
+        buffer.write(&self.value)?;
+
+        Ok(())
+    }
 }
+
+
 
 impl DhtGet {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
@@ -47,6 +60,12 @@ impl DhtGet {
         cursor.read_exact(&mut key)?;
 
         Ok(DhtGet { key })
+    }
+
+    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
+        buffer.write(&self.key)?;
+
+        Ok(())
     }
 }
 
@@ -60,6 +79,13 @@ impl DhtSuccess {
 
         Ok(DhtSuccess { key, value })
     }
+
+    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
+        buffer.write(&self.key)?;
+        buffer.write(&self.value)?;
+
+        Ok(())
+    }
 }
 
 impl DhtFailure {
@@ -68,5 +94,11 @@ impl DhtFailure {
         cursor.read_exact(&mut key)?;
 
         Ok(DhtFailure { key })
+    }
+
+    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
+        buffer.write(&self.key)?;
+
+        Ok(())
     }
 }

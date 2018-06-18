@@ -35,13 +35,13 @@ impl Connection {
     }
 
     fn from_stream(stream: TcpStream) -> Self {
-        let buffer = Vec::with_capacity(64000);
+        let buffer = Vec::with_capacity(Message::MAX_LENGTH);
         Self { stream, buffer }
     }
 
     pub fn receive(&mut self) -> io::Result<Message> {
         self.stream.read_to_end(&mut self.buffer)?;
-        Message::new(self.buffer.as_slice())
+        Message::parse(self.buffer.as_slice())
     }
 
     pub fn send(&mut self, msg: &Message) -> io::Result<()> {
@@ -76,6 +76,7 @@ pub trait ServerHandler {
     fn handle_incoming(&self, result: io::Result<TcpStream>) {
         match result {
             Ok (stream) => {
+                // TODO handle time outs
                 let connection = Connection::from_stream(stream);
                 self.handle_connection(connection)
             },

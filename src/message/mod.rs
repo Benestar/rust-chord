@@ -1,4 +1,4 @@
-use byteorder::{NetworkEndian, ReadBytesExt};
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt;
 use std::io;
 use std::io::Cursor;
@@ -30,6 +30,8 @@ pub enum Message {
 }
 
 impl Message {
+    pub const MAX_LENGTH: usize = 64000;
+
     const DHT_PUT: u16 = 650;
     const DHT_GET: u16 = 651;
     const DHT_SUCCESS: u16 = 652;
@@ -47,7 +49,7 @@ impl Message {
     const PREDECESSOR_REPLY: u16 = 1053;
     const PREDECESSOR_SET: u16 = 1054;
 
-    pub fn new(buffer: &[u8]) -> io::Result<Self> {
+    pub fn parse(buffer: &[u8]) -> io::Result<Self> {
         let mut cursor = Cursor::new(buffer);
         let size = cursor.read_u16::<NetworkEndian>()? as usize;
         let msg_type = cursor.read_u16::<NetworkEndian>()?;
@@ -95,7 +97,79 @@ impl Message {
     }
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
-        panic!("not implemented")
+        // reserve two bytes for size
+        buffer.write_u16::<NetworkEndian>(0);
+
+        match self {
+            Message::DhtPut(dht_put) => {
+                buffer.write_u16::<NetworkEndian>(Self::DHT_PUT)?;
+                dht_put.write_bytes(buffer)?;
+            },
+            Message::DhtGet(dht_get) => {
+                buffer.write_u16::<NetworkEndian>(Self::DHT_GET)?;
+                dht_get.write_bytes(buffer)?;
+            },
+            Message::DhtSuccess(dht_success) => {
+                buffer.write_u16::<NetworkEndian>(Self::DHT_SUCCESS)?;
+                dht_success.write_bytes(buffer)?;
+            },
+            Message::DhtFailure(dht_failure) => {
+                buffer.write_u16::<NetworkEndian>(Self::DHT_FAILURE)?;
+                dht_failure.write_bytes(buffer)?;
+            },
+            Message::StorageGet(storage_get) => {
+                buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET)?;
+                storage_get.write_bytes(buffer)?;
+            },
+            Message::StoragePut(storage_put) => {
+                buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT)?;
+                storage_put.write_bytes(buffer)?;
+            },
+            Message::StorageGetSuccess(storage_get_success) => {
+                buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET_SUCCESS)?;
+                storage_get_success.write_bytes(buffer)?;
+            },
+            Message::StoragePutSuccess(storage_put_success) => {
+                buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT_SUCCESS)?;
+                storage_put_success.write_bytes(buffer)?;
+            },
+            Message::StorageFailure(storage_failure) => {
+                buffer.write_u16::<NetworkEndian>(Self::STORAGE_FAILURE)?;
+                storage_failure.write_bytes(buffer)?;
+            },
+            Message::PeerFind(peer_find) => {
+                buffer.write_u16::<NetworkEndian>(Self::PEER_FIND)?;
+                peer_find.write_bytes(buffer)?;
+            },
+            Message::PeerFound(peer_found) => {
+                buffer.write_u16::<NetworkEndian>(Self::PEER_FOUND)?;
+                peer_found.write_bytes(buffer)?;
+            },
+            Message::PredecessorGet(predecessor_get) => {
+                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_GET)?;
+            }
+            Message::PredecessorReply(predecessor_reply) => {
+                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_REPLY)?;
+                predecessor_reply.write_bytes(buffer)?;
+            },
+            Message::PredecessorSet(predecessor_set) => {
+                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
+            },
+            _ =>
+                // todo define own Error type
+                return Err(io::Error::new(io::ErrorKind::Other, "Invalid message type"))
+        }
+
+        // write size at beginning of buffer
+        let size = buffer.len();
+
+        if size > Self::MAX_LENGTH {
+            return Err(io::Error::new(io::ErrorKind::Other, "Message exceeded maximum length"))
+        }
+
+        buffer.as_mut_slice().write_u16::<NetworkEndian>(size as u16)?;
+
+        Ok(())
     }
 }
 
