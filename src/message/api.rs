@@ -4,23 +4,23 @@ use std::io;
 use byteorder::{ReadBytesExt, WriteBytesExt, NetworkEndian};
 
 pub struct DhtPut {
-    ttl: u16,
-    replication: u8,
-    key: [u8; 32],
-    value: Vec<u8>
+    pub ttl: u16,
+    pub replication: u8,
+    pub key: [u8; 32],
+    pub value: Vec<u8>
 }
 
 pub struct DhtGet {
-    key: [u8; 32]
+    pub key: [u8; 32]
 }
 
 pub struct DhtSuccess {
-    key: [u8; 32],
-    value: Vec<u8>
+    pub key: [u8; 32],
+    pub value: Vec<u8>
 }
 
 pub struct DhtFailure {
-    key: [u8; 32]
+    pub key: [u8; 32]
 }
 
 impl DhtPut {

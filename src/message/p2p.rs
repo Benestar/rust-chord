@@ -6,44 +6,44 @@ use byteorder::{ReadBytesExt, NetworkEndian};
 
 
 pub struct StorageGet {
-    key: [u8; 32]
+    pub key: [u8; 32]
 }
 
 pub struct StoragePut {
-    ttl: u16,
-    replication: u8,
-    key: [u8; 32],
-    value: Vec<u8>
+    pub ttl: u16,
+    pub replication: u8,
+    pub key: [u8; 32],
+    pub value: Vec<u8>
 }
 
 pub struct StorageGetSuccess {
-    key: [u8; 32],
-    value: Vec<u8>
+    pub key: [u8; 32],
+    pub value: Vec<u8>
 }
 
 pub struct StoragePutSuccess {
-    key: [u8; 32],
+    pub key: [u8; 32],
     //todo objective: fast hash algorithm
-    value_hash: [u8; 32]
+    pub value_hash: [u8; 32]
 }
 
 pub struct StorageFailure {
-    key: [u8; 32]
+    pub key: [u8; 32]
 }
 
 pub struct PeerFind {
-    identifier: [u8; 32],
-    reply_to: IpAddr
+    pub identifier: [u8; 32],
+    pub reply_to: IpAddr
 }
 
 pub struct PeerFound {
-    identifier: [u8; 32]
+    pub identifier: [u8; 32]
 }
 
 pub struct PredecessorGet;
 
 pub struct PredecessorReply {
-    ip_address: IpAddr
+    pub ip_address: IpAddr
 }
 
 pub struct PredecessorSet;
