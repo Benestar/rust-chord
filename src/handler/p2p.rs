@@ -3,9 +3,10 @@ use message::Message;
 use message::p2p::*;
 use network::{Connection, ServerHandler};
 use routing::Routing;
+use routing::identifier::Identify;
 use std::error::Error;
 use std::io;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::net::SocketAddr;
 
 pub struct P2PHandler {
@@ -17,40 +18,68 @@ impl P2PHandler {
         Self { routing: Mutex::new(routing) }
     }
 
+    fn lock_routing(&self) -> Result<MutexGuard<Routing<SocketAddr>>, &str> {
+        self.routing.lock()
+            .or(Err("Could not lock mutex for routing"))
+    }
+
     fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
+        let routing = self.lock_routing()?;
+
         // 1. check if given key falls into range
+        if routing.responsible_for(&storage_get.key.get_identifier()) {
+            // 2. find value for given key
 
-        // 2. find value for given key
+            // 3. reply with STORAGE GET SUCCESS or STORAGE FAILURE
+            unimplemented!()
+        }
 
-        // 3. reply with STORAGE GET SUCCESS or STORAGE FAILURE
-        unimplemented!()
+        Ok(())
     }
 
     fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut) -> ::Result<()> {
+        let routing = self.lock_routing()?;
+
         // 1. check if given key falls into range
+        if routing.responsible_for(&storage_put.key.get_identifier()) {
+            // 2. save value for given key
 
-        // 2. save value for given key
+            // 3. reply with STORAGE PUT SUCCESS or STORAGE FAILURE
+            unimplemented!()
+        }
 
-        // 3. reply with STORAGE PUT SUCCESS or STORAGE FAILURE
-        unimplemented!()
+        Ok(())
     }
 
     fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> ::Result<()> {
+        let routing = self.lock_routing()?;
+
+        let identifier = peer_find.identifier;
+
         // 1. check if given key falls into range
+        let ip_address = if routing.responsible_for(&identifier) {
+            routing.get_current_ip().ip()
+        } else {
+            routing.get_successor().ip()
+        };
+
+        // TODO use the finger table to find a node closer to the requested identifier
 
         // 2. reply with PEER FOUND either with this node or the best next node
-        unimplemented!()
+        let peer_found = PeerFound { identifier, ip_address };
+        con.send(&Message::PeerFound(peer_found))?;
+
+        Ok(())
     }
 
     fn handle_predecessor_get(&self, mut con: Connection, predecessor_get: PredecessorGet)
         -> ::Result<()>
     {
-        // 1. return the current predecessor with PREDECESSOR REPLY
-        let mut routing = self.routing.lock()
-            .or(Err("could not lock mutex"))?;
+        let routing = self.lock_routing()?;
 
         let pred = routing.get_predecessor();
 
+        // 1. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { ip_address: pred.ip() };
         con.send(&Message::PredecessorReply(predecessor_reply))?;
 
@@ -60,10 +89,9 @@ impl P2PHandler {
     fn handle_predecessor_set(&self, mut con: Connection, predecessor_set: PredecessorSet)
         -> ::Result<()>
     {
-        let peer_addr = con.peer_addr()?;
+        let mut routing = self.lock_routing()?;
 
-        let mut routing = self.routing.lock()
-            .or(Err("could not lock mutex"))?;
+        let peer_addr = con.peer_addr()?;
 
         // 1. check if the predecessor is closer than the previous predecessor
         if routing.is_closer_predecessor(&peer_addr) {

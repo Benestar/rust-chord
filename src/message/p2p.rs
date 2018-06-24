@@ -1,8 +1,9 @@
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use routing::identifier::Identifier;
+use std::io;
 use std::io::Cursor;
 use std::io::prelude::*;
-use std::io;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use std::net::{IpAddr, Ipv6Addr};
 
 
 pub struct StorageGet {
@@ -32,12 +33,12 @@ pub struct StorageFailure {
 }
 
 pub struct PeerFind {
-    pub identifier: [u8; 32],
-    pub reply_to: IpAddr
+    pub identifier: Identifier
 }
 
 pub struct PeerFound {
-    pub identifier: [u8; 32]
+    pub identifier: Identifier,
+    pub ip_address: IpAddr
 }
 
 pub struct PredecessorGet;
@@ -146,31 +147,15 @@ impl StorageFailure {
 
 impl PeerFind {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
-        let mut identifier = [0; 32];
-        cursor.read_exact(&mut identifier)?;
+        let mut id_arr = [0; 32];
+        cursor.read_exact(&mut id_arr)?;
+        let identifier = Identifier::new(&id_arr);
 
-        let mut ip_arr = [0; 16];
-        cursor.read_exact(&mut ip_arr)?;
-
-        let ipv6 = Ipv6Addr::from(ip_arr);
-
-        let reply_to = match ipv6.to_ipv4() {
-            Some(ipv4) => IpAddr::V4(ipv4),
-            None => IpAddr::V6(ipv6)
-        };
-
-        Ok(PeerFind{ identifier, reply_to })
+        Ok(PeerFind{ identifier })
     }
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
-        buffer.write(&self.identifier)?;
-
-        let ip_address = match self.reply_to {
-            IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
-            IpAddr::V6(ipv6) => ipv6
-        };
-
-        buffer.write(&ip_address.octets())?;
+        buffer.write(&self.identifier.as_bytes())?;
 
         Ok(())
     }
@@ -178,14 +163,32 @@ impl PeerFind {
 
 impl PeerFound {
     pub fn parse(mut cursor: Cursor<&[u8]>) -> io::Result<Self> {
-        let mut identifier = [0; 32];
-        cursor.read_exact(&mut identifier)?;
+        let mut id_arr = [0; 32];
+        cursor.read_exact(&mut id_arr)?;
+        let identifier = Identifier::new(&id_arr);
 
-        Ok(PeerFound{ identifier })
+        let mut ip_arr = [0; 16];
+        cursor.read_exact(&mut ip_arr)?;
+
+        let ipv6 = Ipv6Addr::from(ip_arr);
+
+        let ip_address = match ipv6.to_ipv4() {
+            Some(ipv4) => IpAddr::V4(ipv4),
+            None => IpAddr::V6(ipv6)
+        };
+
+        Ok(PeerFound{ identifier, ip_address })
     }
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
-        buffer.write(&self.identifier);
+        buffer.write(&self.identifier.as_bytes())?;
+
+        let ip_address = match self.ip_address {
+            IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
+            IpAddr::V6(ipv6) => ipv6
+        };
+
+        buffer.write(&ip_address.octets())?;
 
         Ok(())
     }

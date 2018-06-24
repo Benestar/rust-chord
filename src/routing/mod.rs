@@ -1,6 +1,6 @@
 use routing::identifier::*;
 
-mod identifier;
+pub mod identifier;
 
 pub struct Routing<T> {
     current_ip: IdentifierValue<T>,
@@ -17,6 +17,10 @@ impl<T: Identify> Routing<T> {
             predecessor: IdentifierValue::new(predecessor),
             successor: IdentifierValue::new(successor)
         }
+    }
+
+    pub fn get_current_ip(&self) -> &T {
+        self.current_ip.get_value()
     }
 
     pub fn get_predecessor(&self) -> &T {

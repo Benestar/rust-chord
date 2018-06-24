@@ -98,7 +98,7 @@ impl Message {
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
         // reserve two bytes for size
-        buffer.write_u16::<NetworkEndian>(0);
+        buffer.write_u16::<NetworkEndian>(0)?;
 
         match self {
             Message::DhtPut(dht_put) => {
@@ -154,10 +154,7 @@ impl Message {
             },
             Message::PredecessorSet(predecessor_set) => {
                 buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
-            },
-            _ =>
-                // todo define own Error type
-                return Err(io::Error::new(io::ErrorKind::Other, "Invalid message type"))
+            }
         }
 
         // write size at beginning of buffer

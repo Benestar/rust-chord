@@ -5,9 +5,13 @@ use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 pub struct Identifier(U256);
 
 impl Identifier {
-    fn new(bytes: &[u8]) -> Self {
+    pub fn new(identifier: &[u8]) -> Self {
+        Identifier(U256::from_big_endian(identifier))
+    }
+
+    fn generate(bytes: &[u8]) -> Self {
         let dig = digest::digest(&digest::SHA256, bytes);
-        Identifier(U256::from_big_endian(dig.as_ref()))
+        Self::new(dig.as_ref())
     }
 
     pub fn is_between(&self, first: &Identifier, second: &Identifier) -> bool {
@@ -15,6 +19,12 @@ impl Identifier {
         let (diff2, _) = second.0.overflowing_sub(first.0);
 
         diff1 < diff2
+    }
+
+    pub fn as_bytes(&self) -> [u8; 32] {
+        let mut bytes = [0; 32];
+        self.0.to_big_endian(&mut bytes);
+        bytes
     }
 }
 
@@ -24,13 +34,13 @@ pub trait Identify {
 
 impl Identify for SocketAddrV4 {
     fn get_identifier(&self) -> Identifier {
-        Identifier::new(self.ip().octets().as_ref())
+        Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
 impl Identify for SocketAddrV6 {
     fn get_identifier(&self) -> Identifier {
-        Identifier::new(self.ip().octets().as_ref())
+        Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
@@ -45,7 +55,7 @@ impl Identify for SocketAddr {
 
 impl Identify for [u8; 32] {
     fn get_identifier(&self) -> Identifier {
-        Identifier::new(self.as_ref())
+        Identifier::generate(self.as_ref())
     }
 }
 
