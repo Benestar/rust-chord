@@ -2,20 +2,26 @@ use error::MessageError;
 use message::Message;
 use message::p2p::*;
 use network::{Connection, ServerHandler};
+use routing::identifier::{Identifier, Identify};
 use routing::Routing;
-use routing::identifier::Identify;
 use std::error::Error;
 use std::io;
-use std::sync::{Mutex, MutexGuard};
 use std::net::SocketAddr;
+use std::str;
+use std::sync::{Mutex, MutexGuard};
+use storage::Storage;
 
 pub struct P2PHandler {
-    routing: Mutex<Routing<SocketAddr>>
+    routing: Mutex<Routing<SocketAddr>>,
+    storage: Mutex<Storage>
 }
 
 impl P2PHandler {
-    pub fn new(routing: Routing<SocketAddr>) -> Self {
-        Self { routing: Mutex::new(routing) }
+    pub fn new(routing: Routing<SocketAddr>, storage: Storage) -> Self {
+        Self {
+            routing: Mutex::new(routing),
+            storage: Mutex::new(storage)
+        }
     }
 
     fn lock_routing(&self) -> Result<MutexGuard<Routing<SocketAddr>>, &str> {
@@ -23,29 +29,64 @@ impl P2PHandler {
             .or(Err("Could not lock mutex for routing"))
     }
 
-    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
+    fn lock_storage(&self) -> Result<MutexGuard<Storage>, &str> {
+        self.storage.lock()
+            .or(Err("Could not lock mutex for storage"))
+    }
+
+    fn responsible_for(&self, identifier: &Identifier) -> Result<bool, &str> {
         let routing = self.lock_routing()?;
+        Ok(routing.responsible_for(identifier))
+    }
+
+    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
+        let key = storage_get.key;
 
         // 1. check if given key falls into range
-        if routing.responsible_for(&storage_get.key.get_identifier()) {
+        if self.responsible_for(&key.get_identifier())? {
+            // TODO the critical region is way too large
+            let storage = self.lock_storage()?;
+
             // 2. find value for given key
+            // TODO base64 encode the key
+            let enc_key = str::from_utf8(&key)?;
+
+            let msg = if storage.contains_key(enc_key) {
+                let value = storage.get(enc_key)?;
+                Message::StorageGetSuccess(StorageGetSuccess { key, value })
+            } else {
+                Message::StorageFailure(StorageFailure { key })
+            };
 
             // 3. reply with STORAGE GET SUCCESS or STORAGE FAILURE
-            unimplemented!()
+            con.send(&msg)?
         }
 
         Ok(())
     }
 
     fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut) -> ::Result<()> {
-        let routing = self.lock_routing()?;
+        let key = storage_put.key;
 
         // 1. check if given key falls into range
-        if routing.responsible_for(&storage_put.key.get_identifier()) {
+        if self.responsible_for(&key.get_identifier())? {
+            // TODO the critical region is way too large
+            let mut storage = self.lock_storage()?;
+
             // 2. save value for given key
+            // TODO base64 encode the key
+            let enc_key = str::from_utf8(&key)?;
+
+            let msg = if storage.contains_key(enc_key) {
+                Message::StorageFailure(StorageFailure { key })
+            } else {
+                storage.insert(enc_key, &storage_put.value)?;
+                let value_hash = [0; 32];
+                Message::StoragePutSuccess(StoragePutSuccess { key, value_hash })
+            };
 
             // 3. reply with STORAGE PUT SUCCESS or STORAGE FAILURE
-            unimplemented!()
+            con.send(&msg)?;
         }
 
         Ok(())
