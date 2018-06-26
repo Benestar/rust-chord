@@ -97,7 +97,7 @@ impl Server {
             let pool = ThreadPool::new(num_workers);
 
             for result in listener.incoming() {
-                let handler = self.handler.clone();
+                let handler = Arc::clone(self.handler);
                 pool.execute(move || {
                     handler.handle_incoming(result);
                 });
