@@ -1,3 +1,4 @@
+use base64;
 use error::MessageError;
 use message::Message;
 use message::p2p::*;
@@ -7,7 +8,6 @@ use routing::Routing;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::str;
 use std::sync::{Mutex, MutexGuard};
 use storage::Storage;
 
@@ -48,11 +48,10 @@ impl P2PHandler {
             let storage = self.lock_storage()?;
 
             // 2. find value for given key
-            // TODO base64 encode the key
-            let enc_key = str::from_utf8(&key)?;
+            let enc_key = base64::encode(&key);
 
-            let msg = if storage.contains_key(enc_key) {
-                let value = storage.get(enc_key)?;
+            let msg = if storage.contains_key(&enc_key) {
+                let value = storage.get(&enc_key)?;
                 Message::StorageGetSuccess(StorageGetSuccess { key, value })
             } else {
                 Message::StorageFailure(StorageFailure { key })
@@ -74,13 +73,12 @@ impl P2PHandler {
             let mut storage = self.lock_storage()?;
 
             // 2. save value for given key
-            // TODO base64 encode the key
-            let enc_key = str::from_utf8(&key)?;
+            let enc_key = base64::encode(&key);
 
-            let msg = if storage.contains_key(enc_key) {
+            let msg = if storage.contains_key(&enc_key) {
                 Message::StorageFailure(StorageFailure { key })
             } else {
-                storage.insert(enc_key, &storage_put.value)?;
+                storage.insert(&enc_key, &storage_put.value)?;
                 let value_hash = [0; 32];
                 Message::StoragePutSuccess(StoragePutSuccess { key, value_hash })
             };

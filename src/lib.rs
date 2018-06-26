@@ -1,3 +1,4 @@
+extern crate base64;
 extern crate bigint;
 extern crate byteorder;
 extern crate ring;
