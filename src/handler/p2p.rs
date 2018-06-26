@@ -96,16 +96,16 @@ impl P2PHandler {
         let identifier = peer_find.identifier;
 
         // 1. check if given key falls into range
-        let ip_address = if routing.responsible_for(&identifier) {
-            routing.get_current_ip().ip()
+        let socket_addr = if routing.responsible_for(&identifier) {
+            routing.get_current().clone()
         } else {
-            routing.get_successor().ip()
+            routing.get_successor().clone()
         };
 
         // TODO use the finger table to find a node closer to the requested identifier
 
         // 2. reply with PEER FOUND either with this node or the best next node
-        let peer_found = PeerFound { identifier, ip_address };
+        let peer_found = PeerFound { identifier, socket_addr };
         con.send(&Message::PeerFound(peer_found))?;
 
         Ok(())
@@ -119,7 +119,7 @@ impl P2PHandler {
         let pred = routing.get_predecessor();
 
         // 1. return the current predecessor with PREDECESSOR REPLY
-        let predecessor_reply = PredecessorReply { ip_address: pred.ip() };
+        let predecessor_reply = PredecessorReply { socket_addr: pred.clone() };
         con.send(&Message::PredecessorReply(predecessor_reply))?;
 
         Ok(())

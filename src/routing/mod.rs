@@ -3,7 +3,7 @@ use routing::identifier::*;
 pub mod identifier;
 
 pub struct Routing<T> {
-    current_ip: IdentifierValue<T>,
+    current: IdentifierValue<T>,
     // TODO should maybe be an Option
     predecessor: IdentifierValue<T>,
     // TODO use BinaryHeap for multiple successors
@@ -11,16 +11,16 @@ pub struct Routing<T> {
 }
 
 impl<T: Identify> Routing<T> {
-    pub fn new(current_ip: T, predecessor: T, successor: T) -> Self {
+    pub fn new(current: T, predecessor: T, successor: T) -> Self {
         Routing {
-            current_ip: IdentifierValue::new(current_ip),
+            current: IdentifierValue::new(current),
             predecessor: IdentifierValue::new(predecessor),
             successor: IdentifierValue::new(successor)
         }
     }
 
-    pub fn get_current_ip(&self) -> &T {
-        self.current_ip.get_value()
+    pub fn get_current(&self) -> &T {
+        self.current.get_value()
     }
 
     pub fn get_predecessor(&self) -> &T {
@@ -34,7 +34,7 @@ impl<T: Identify> Routing<T> {
     pub fn is_closer_predecessor(&self, new_pred: &T) -> bool {
         new_pred.get_identifier().is_between(
             self.predecessor.get_identifier(),
-            self.current_ip.get_identifier()
+            self.current.get_identifier()
         )
     }
 
@@ -49,7 +49,7 @@ impl<T: Identify> Routing<T> {
     pub fn responsible_for(&self, identifier: &Identifier) -> bool {
         identifier.is_between(
             self.predecessor.get_identifier(),
-            self.current_ip.get_identifier()
+            self.current.get_identifier()
         )
     }
 }

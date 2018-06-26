@@ -3,7 +3,7 @@ use routing::identifier::Identifier;
 use std::io;
 use std::io::Cursor;
 use std::io::prelude::*;
-use std::net::{IpAddr, Ipv6Addr};
+use std::net::{IpAddr, Ipv6Addr, SocketAddr};
 
 
 pub struct StorageGet {
@@ -38,13 +38,13 @@ pub struct PeerFind {
 
 pub struct PeerFound {
     pub identifier: Identifier,
-    pub ip_address: IpAddr
+    pub socket_addr: SocketAddr
 }
 
 pub struct PredecessorGet;
 
 pub struct PredecessorReply {
-    pub ip_address: IpAddr
+    pub socket_addr: SocketAddr
 }
 
 pub struct PredecessorSet;
@@ -177,18 +177,23 @@ impl PeerFound {
             None => IpAddr::V6(ipv6)
         };
 
-        Ok(PeerFound{ identifier, ip_address })
+        let port = cursor.read_u16::<NetworkEndian>()?;
+
+        let socket_addr = SocketAddr::new(ip_address, port);
+
+        Ok(PeerFound{ identifier, socket_addr })
     }
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
         buffer.write(&self.identifier.as_bytes())?;
 
-        let ip_address = match self.ip_address {
+        let ip_address = match self.socket_addr.ip() {
             IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
             IpAddr::V6(ipv6) => ipv6
         };
 
         buffer.write(&ip_address.octets())?;
+        buffer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
 
         Ok(())
     }
@@ -212,16 +217,21 @@ impl PredecessorReply {
             None => IpAddr::V6(ipv6)
         };
 
-        Ok(PredecessorReply { ip_address })
+        let port = cursor.read_u16::<NetworkEndian>()?;
+
+        let socket_addr = SocketAddr::new(ip_address, port);
+
+        Ok(PredecessorReply { socket_addr })
     }
 
     pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
-        let ip_address = match self.ip_address {
+        let ip_address = match self.socket_addr.ip() {
             IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
             IpAddr::V6(ipv6) => ipv6
         };
 
         buffer.write(&ip_address.octets())?;
+        buffer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
 
         Ok(())
     }
