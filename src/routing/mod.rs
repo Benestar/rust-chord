@@ -16,7 +16,7 @@
 //! [`Identifier`]: identifier/struct.Identifier.html
 //! [`Routing`]: struct.Routing.html
 
-use routing::identifier::*;
+use self::identifier::*;
 
 pub mod identifier;
 
@@ -26,16 +26,19 @@ pub struct Routing<T> {
     // TODO should maybe be an Option
     predecessor: IdentifierValue<T>,
     // TODO use BinaryHeap for multiple successors
-    successor: IdentifierValue<T>
+    successor: IdentifierValue<T>,
+    // TODO
+    finger_table: Vec<IdentifierValue<T>>
 }
 
 impl<T: Identify> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
-    pub fn new(current: T, predecessor: T, successor: T) -> Self {
+    pub fn new(current: T, predecessor: T, successor: T, fingers: usize) -> Self {
         Routing {
             current: IdentifierValue::new(current),
             predecessor: IdentifierValue::new(predecessor),
-            successor: IdentifierValue::new(successor)
+            successor: IdentifierValue::new(successor),
+            finger_table: Vec::with_capacity(fingers)
         }
     }
 
@@ -54,15 +57,6 @@ impl<T: Identify> Routing<T> {
         self.predecessor = IdentifierValue::new(new_pred);
     }
 
-    /// Checks whether the given address is closer than the address of the
-    /// current predecessor.
-    pub fn is_closer_predecessor(&self, new_pred: &T) -> bool {
-        new_pred.get_identifier().is_between(
-            self.predecessor.get_identifier(),
-            self.current.get_identifier()
-        )
-    }
-
     /// Returns the current successor.
     pub fn get_successor(&self) -> &T {
         self.successor.get_value()
@@ -79,5 +73,23 @@ impl<T: Identify> Routing<T> {
             self.predecessor.get_identifier(),
             self.current.get_identifier()
         )
+    }
+
+    /// Points the finger to the given peer.
+    pub fn update_finger(&mut self, peer: T, index: usize) {
+        self.finger_table[index] = IdentifierValue::new(peer);
+    }
+
+    /// Returns the peer closest to the given identifier.
+    pub fn closest_peer(&self, identifier: &Identifier) -> &T {
+        let diff = identifier.offset(self.current.get_identifier());
+        let zeros = diff.leading_zeros() as usize;
+
+        if zeros >= self.finger_table.len() {
+            self.successor.get_value()
+        }
+        else {
+            self.finger_table[zeros].get_value()
+        }
     }
 }

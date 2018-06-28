@@ -139,7 +139,7 @@ impl P2PHandler {
         let peer_addr = con.peer_addr()?;
 
         // 1. check if the predecessor is closer than the previous predecessor
-        if routing.is_closer_predecessor(&peer_addr) {
+        if routing.responsible_for(&peer_addr.get_identifier()) {
             // 2. update the predecessor if necessary
             routing.set_predecessor(peer_addr)
         }

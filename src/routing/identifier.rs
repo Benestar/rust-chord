@@ -64,6 +64,46 @@ impl Identifier {
         diff1 < diff2
     }
 
+    /// Calculate the distance to the given offset in positive direction.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::Identifier;
+    /// #
+    /// let id1 = Identifier::new(&[5; 32]);
+    /// let id2 = Identifier::new(&[1; 32]);
+    ///
+    /// let offset = Identifier::new(&[4; 32]);
+    ///
+    /// assert_eq!(offset, id1.offset(&id2));
+    /// ```
+    pub fn offset(&self, base: &Identifier) -> Identifier {
+        let (diff, _) = self.0.overflowing_sub(base.0);
+
+        Identifier(diff)
+    }
+
+    /// Returns the binary logarithm of this identifier minus the given offset.
+    ///
+    /// The result is the floor of the actual result.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::Identifier;
+    /// #
+    /// let identifier = Identifier::new(&[
+    ///     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ///     5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+    /// ]);
+    ///
+    /// assert_eq!(133, identifier.leading_zeros());
+    /// ```
+    pub fn leading_zeros(&self) -> u32 {
+        self.0.leading_zeros()
+    }
+
     /// Returns the raw bytes of this identifier.
     ///
     /// # Examples
