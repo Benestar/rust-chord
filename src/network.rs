@@ -15,6 +15,9 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use threadpool::ThreadPool;
+use std::io::Cursor;
+
+const MAX_MESSAGE_SIZE: usize = 64000;
 
 /// A connection between two peers to send Message objects via TCP
 ///
@@ -31,7 +34,7 @@ use threadpool::ThreadPool;
 /// ```
 pub struct Connection {
     stream: TcpStream,
-    buffer: Vec<u8>
+    buffer: [u8; MAX_MESSAGE_SIZE]
 }
 
 impl Connection {
@@ -65,7 +68,7 @@ impl Connection {
 
     fn from_stream(stream: TcpStream) -> Self {
         // TODO set read and write timeout
-        let buffer = Vec::with_capacity(Message::MAX_LENGTH);
+        let buffer = [0; MAX_MESSAGE_SIZE];
         Self { stream, buffer }
     }
 
@@ -73,16 +76,22 @@ impl Connection {
     ///
     /// This operation is blocking until a message has been received.
     pub fn receive(&mut self) -> io::Result<Message> {
-        self.stream.read_to_end(&mut self.buffer)?;
-        Message::parse(self.buffer.as_slice())
+        // read bytes from tcp stream
+        let size = self.stream.read(self.buffer.as_mut())?;
+
+        // create cursor to parse message
+        Message::parse(&mut Cursor::new(&self.buffer[..size]))
     }
 
     /// Sends a message to the remote peer.
     ///
     /// This operation is blocking until the message has been sent.
     pub fn send(&mut self, msg: &Message) -> io::Result<()> {
-        msg.write_bytes(&mut self.buffer)?;
-        self.stream.write_all(self.buffer.as_slice())
+        // create cursor to write message
+        let size = msg.write_to(&mut Cursor::new(self.buffer.as_mut()))?;
+
+        // write bytes to tcp stream
+        self.stream.write_all(&self.buffer[..size])
     }
 
     /// Returns the socket address of the remote peer of this TCP connection.

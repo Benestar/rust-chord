@@ -8,7 +8,8 @@
 //! [`Connection`]: ../network/struct.Connection.html
 
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use std::io::{self, Cursor};
+use std::io;
+use std::io::prelude::*;
 
 pub mod api;
 pub mod p2p;
@@ -77,8 +78,6 @@ pub enum Message {
 }
 
 impl Message {
-    pub const MAX_LENGTH: usize = 64000;
-
     const DHT_PUT: u16 = 650;
     const DHT_GET: u16 = 651;
     const DHT_SUCCESS: u16 = 652;
@@ -96,123 +95,118 @@ impl Message {
     const PREDECESSOR_REPLY: u16 = 1053;
     const PREDECESSOR_SET: u16 = 1054;
 
-    pub fn parse(buffer: &[u8]) -> io::Result<Self> {
-        let mut cursor = Cursor::new(buffer);
-        let size = cursor.read_u16::<NetworkEndian>()? as usize;
-        let msg_type = cursor.read_u16::<NetworkEndian>()?;
+    pub fn parse<T: Read>(reader: &mut T) -> io::Result<Self> {
+        let size = reader.read_u16::<NetworkEndian>()?;
+        let msg_type = reader.read_u16::<NetworkEndian>()?;
 
-        if buffer.len() != size {
-            // todo define own error type
-            return Err(io::Error::new(io::ErrorKind::Other, "Non-matching message size"))
-        }
+        reader.take(size as u64 - 4);
 
         let msg = match msg_type {
             Self::DHT_PUT =>
-                Message::DhtPut(api::DhtPut::parse(cursor)?),
+                Message::DhtPut(api::DhtPut::parse(reader)?),
             Self::DHT_GET =>
-                Message::DhtGet(api::DhtGet::parse(cursor)?),
+                Message::DhtGet(api::DhtGet::parse(reader)?),
             Self::DHT_SUCCESS =>
-                Message::DhtSuccess(api::DhtSuccess::parse(cursor)?),
+                Message::DhtSuccess(api::DhtSuccess::parse(reader)?),
             Self::DHT_FAILURE =>
-                Message::DhtFailure(api::DhtFailure::parse(cursor)?),
+                Message::DhtFailure(api::DhtFailure::parse(reader)?),
             Self::STORAGE_GET =>
-                Message::StorageGet(p2p::StorageGet::parse(cursor)?),
+                Message::StorageGet(p2p::StorageGet::parse(reader)?),
             Self::STORAGE_PUT =>
-                Message::StoragePut(p2p::StoragePut::parse(cursor)?),
+                Message::StoragePut(p2p::StoragePut::parse(reader)?),
             Self::STORAGE_GET_SUCCESS =>
-                Message::StorageGetSuccess(p2p::StorageGetSuccess::parse(cursor)?),
+                Message::StorageGetSuccess(p2p::StorageGetSuccess::parse(reader)?),
             Self::STORAGE_PUT_SUCCESS =>
-                Message::StoragePutSuccess(p2p::StoragePutSuccess::parse(cursor)?),
+                Message::StoragePutSuccess(p2p::StoragePutSuccess::parse(reader)?),
             Self::STORAGE_FAILURE =>
-                Message::StorageFailure(p2p::StorageFailure::parse(cursor)?),
+                Message::StorageFailure(p2p::StorageFailure::parse(reader)?),
             Self::PEER_FIND =>
-                Message::PeerFind(p2p::PeerFind::parse(cursor)?),
+                Message::PeerFind(p2p::PeerFind::parse(reader)?),
             Self::PEER_FOUND =>
-                Message::PeerFound(p2p::PeerFound::parse(cursor)?),
+                Message::PeerFound(p2p::PeerFound::parse(reader)?),
             Self::PREDECESSOR_GET =>
-                Message::PredecessorGet(p2p::PredecessorGet::parse(cursor)?),
+                Message::PredecessorGet(p2p::PredecessorGet::parse(reader)?),
             Self::PREDECESSOR_REPLY =>
-                Message::PredecessorReply(p2p::PredecessorReply::parse(cursor)?),
+                Message::PredecessorReply(p2p::PredecessorReply::parse(reader)?),
             Self::PREDECESSOR_SET =>
-                Message::PredecessorSet(p2p::PredecessorSet::parse(cursor)?),
+                Message::PredecessorSet(p2p::PredecessorSet::parse(reader)?),
             _ =>
-                // todo define own Error type
-                return Err(io::Error::new(io::ErrorKind::Other, "Invalid message type"))
+                return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                          "Invalid message type"))
         };
 
         Ok(msg)
     }
 
-    pub fn write_bytes(&self, buffer: &mut Vec<u8>) -> io::Result<()> {
+    pub fn write_to<T: Write + Seek>(&self, writer: &mut T) -> io::Result<usize> {
         // reserve two bytes for size
-        buffer.write_u16::<NetworkEndian>(0)?;
+        writer.write_u16::<NetworkEndian>(0)?;
 
         match self {
             Message::DhtPut(dht_put) => {
-                buffer.write_u16::<NetworkEndian>(Self::DHT_PUT)?;
-                dht_put.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::DHT_PUT)?;
+                dht_put.write_to(writer)?;
             }
             Message::DhtGet(dht_get) => {
-                buffer.write_u16::<NetworkEndian>(Self::DHT_GET)?;
-                dht_get.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::DHT_GET)?;
+                dht_get.write_to(writer)?;
             }
             Message::DhtSuccess(dht_success) => {
-                buffer.write_u16::<NetworkEndian>(Self::DHT_SUCCESS)?;
-                dht_success.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::DHT_SUCCESS)?;
+                dht_success.write_to(writer)?;
             }
             Message::DhtFailure(dht_failure) => {
-                buffer.write_u16::<NetworkEndian>(Self::DHT_FAILURE)?;
-                dht_failure.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::DHT_FAILURE)?;
+                dht_failure.write_to(writer)?;
             }
             Message::StorageGet(storage_get) => {
-                buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET)?;
-                storage_get.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::STORAGE_GET)?;
+                storage_get.write_to(writer)?;
             }
             Message::StoragePut(storage_put) => {
-                buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT)?;
-                storage_put.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::STORAGE_PUT)?;
+                storage_put.write_to(writer)?;
             }
             Message::StorageGetSuccess(storage_get_success) => {
-                buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET_SUCCESS)?;
-                storage_get_success.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::STORAGE_GET_SUCCESS)?;
+                storage_get_success.write_to(writer)?;
             }
             Message::StoragePutSuccess(storage_put_success) => {
-                buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT_SUCCESS)?;
-                storage_put_success.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::STORAGE_PUT_SUCCESS)?;
+                storage_put_success.write_to(writer)?;
             }
             Message::StorageFailure(storage_failure) => {
-                buffer.write_u16::<NetworkEndian>(Self::STORAGE_FAILURE)?;
-                storage_failure.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::STORAGE_FAILURE)?;
+                storage_failure.write_to(writer)?;
             }
             Message::PeerFind(peer_find) => {
-                buffer.write_u16::<NetworkEndian>(Self::PEER_FIND)?;
-                peer_find.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::PEER_FIND)?;
+                peer_find.write_to(writer)?;
             }
             Message::PeerFound(peer_found) => {
-                buffer.write_u16::<NetworkEndian>(Self::PEER_FOUND)?;
-                peer_found.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::PEER_FOUND)?;
+                peer_found.write_to(writer)?;
             }
             Message::PredecessorGet(predecessor_get) => {
-                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_GET)?;
+                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_GET)?;
+                predecessor_get.write_to(writer)?;
             }
             Message::PredecessorReply(predecessor_reply) => {
-                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_REPLY)?;
-                predecessor_reply.write_bytes(buffer)?;
+                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_REPLY)?;
+                predecessor_reply.write_to(writer)?;
             }
             Message::PredecessorSet(predecessor_set) => {
-                buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
+                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
+                predecessor_set.write_to(writer)?;
             }
         }
 
-        // write size at beginning of buffer
-        let size = buffer.len();
+        // write size at beginning of writer
+        let size = writer.seek(io::SeekFrom::End(0))?;
 
-        if size > Self::MAX_LENGTH {
-            return Err(io::Error::new(io::ErrorKind::Other, "Message exceeded maximum length"))
-        }
+        writer.seek(io::SeekFrom::Start(0))?;
+        writer.write_u16::<NetworkEndian>(size as u16)?;
 
-        buffer.as_mut_slice().write_u16::<NetworkEndian>(size as u16)?;
-
-        Ok(())
+        Ok(size as usize)
     }
 }
