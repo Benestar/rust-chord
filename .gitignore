@@ -6,3 +6,4 @@
 *.iml
 
 .vagrant/
+*.ini

@@ -61,12 +61,15 @@
 extern crate base64;
 extern crate bigint;
 extern crate byteorder;
+extern crate ini;
 extern crate ring;
 extern crate threadpool;
 
+use config::Config;
 use std::error::Error;
 
 pub mod error;
+pub mod config;
 pub mod handler;
 pub mod message;
 pub mod network;
@@ -74,3 +77,11 @@ pub mod routing;
 pub mod storage;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
+
+pub fn run(config: Config) -> Result<()> {
+    println!("Distributed Hash Table based on CHORD");
+    println!("-------------------------------------\n");
+    println!("{:#?}\n", &config);
+
+    Ok(())
+}
