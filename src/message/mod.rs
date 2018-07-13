@@ -1,31 +1,78 @@
-use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use std::fmt;
-use std::io;
-use std::io::Cursor;
+//! Implementation of the specified message types, split into api and
+//! peer-to-peer messages.
+//!
+//! The [`Message`] enum combines these messages and provides an abstraction
+//! for sending messages over a TCP stream using the [`Connection`] struct.
+//!
+//! [`Message`]: enum.Message.html
+//! [`Connection`]: ../network/struct.Connection.html
 
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use std::io::{self, Cursor};
 
 pub mod api;
 pub mod p2p;
 
-/// The different message types supported by this module
+/// This enum contains the different message types supported by this module.
 ///
-/// For each message type, there exists a corresponding
-/// struct holding the contents of this message.
-
+/// For each message type, there exists a corresponding struct holding the
+/// contents of this message.
+///
+/// # Api message types
+///
+/// The following message types are relevant for the api interface:
+///
+/// * [`DhtPut`](#variant.DhtPut)
+/// * [`DhtGet`](#variant.DhtGet)
+/// * [`DhtSuccess`](#variant.DhtSuccess)
+/// * [`DhtFailure`](#variant.DhtFailure)
+///
+/// # P2P message types
+///
+/// The following message types are relevent for the peer-to-peer interface:
+///
+/// * [`StorageGet`](#variant.StorageGet)
+/// * [`StoragePut`](#variant.StoragePut)
+/// * [`StorageGetSuccess`](#variant.StorageGetSuccess)
+/// * [`StoragePutSuccess`](#variant.StoragePutSuccess)
+/// * [`StorageFailure`](#variant.StorageFailure)
+/// * [`PeerFind`](#variant.PeerFind)
+/// * [`PeerFound`](#variant.PeerFound)
+/// * [`PredecessorGet`](#variant.PredecessorGet)
+/// * [`PredecessorReply`](#variant.PredecessorReply)
+/// * [`PredecessorSet`](#variant.PredecessorSet)
+#[derive(Debug)]
 pub enum Message {
+    /// The given key-value pair should be stored in the network.
     DhtPut(api::DhtPut),
+    /// Search for a given key and provide the value if a value for the
+    /// corresponding is found in the network.
     DhtGet(api::DhtGet),
+    /// A previous `DHT GET` operation found a value corresponding to the
+    /// requested key in the network.
     DhtSuccess(api::DhtSuccess),
+    /// A previous DHT GET operation did not find any value for the requested
+    /// key.
     DhtFailure(api::DhtFailure),
+    /// Obtain the value for the given key if the peer is responsible for.
     StorageGet(p2p::StorageGet),
+    /// Store a message at a specific peer which is responsible for the key.
     StoragePut(p2p::StoragePut),
+    /// Reply to a previous `DHT GET` request with the corresponsindg value.
     StorageGetSuccess(p2p::StorageGetSuccess),
+    /// Reply to a previous `DHT PUT` request with a hash of the stored value.
     StoragePutSuccess(p2p::StoragePutSuccess),
+    /// An error occured during a previous `DHT GET` or `DHT PUT` message.
     StorageFailure(p2p::StorageFailure),
+    /// Initiates a lookup for a node responsible for the given identifier.
     PeerFind(p2p::PeerFind),
+    /// A peer close to the given identifier has been found.
     PeerFound(p2p::PeerFound),
+    /// Query the predecessor of some other peer.
     PredecessorGet(p2p::PredecessorGet),
+    /// Reply to `PREDECESSOR GET` with the predecessor's address.
     PredecessorReply(p2p::PredecessorReply),
+    /// Tell some peer about a potentially new predecessor.
     PredecessorSet(p2p::PredecessorSet)
 }
 
@@ -104,54 +151,54 @@ impl Message {
             Message::DhtPut(dht_put) => {
                 buffer.write_u16::<NetworkEndian>(Self::DHT_PUT)?;
                 dht_put.write_bytes(buffer)?;
-            },
+            }
             Message::DhtGet(dht_get) => {
                 buffer.write_u16::<NetworkEndian>(Self::DHT_GET)?;
                 dht_get.write_bytes(buffer)?;
-            },
+            }
             Message::DhtSuccess(dht_success) => {
                 buffer.write_u16::<NetworkEndian>(Self::DHT_SUCCESS)?;
                 dht_success.write_bytes(buffer)?;
-            },
+            }
             Message::DhtFailure(dht_failure) => {
                 buffer.write_u16::<NetworkEndian>(Self::DHT_FAILURE)?;
                 dht_failure.write_bytes(buffer)?;
-            },
+            }
             Message::StorageGet(storage_get) => {
                 buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET)?;
                 storage_get.write_bytes(buffer)?;
-            },
+            }
             Message::StoragePut(storage_put) => {
                 buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT)?;
                 storage_put.write_bytes(buffer)?;
-            },
+            }
             Message::StorageGetSuccess(storage_get_success) => {
                 buffer.write_u16::<NetworkEndian>(Self::STORAGE_GET_SUCCESS)?;
                 storage_get_success.write_bytes(buffer)?;
-            },
+            }
             Message::StoragePutSuccess(storage_put_success) => {
                 buffer.write_u16::<NetworkEndian>(Self::STORAGE_PUT_SUCCESS)?;
                 storage_put_success.write_bytes(buffer)?;
-            },
+            }
             Message::StorageFailure(storage_failure) => {
                 buffer.write_u16::<NetworkEndian>(Self::STORAGE_FAILURE)?;
                 storage_failure.write_bytes(buffer)?;
-            },
+            }
             Message::PeerFind(peer_find) => {
                 buffer.write_u16::<NetworkEndian>(Self::PEER_FIND)?;
                 peer_find.write_bytes(buffer)?;
-            },
+            }
             Message::PeerFound(peer_found) => {
                 buffer.write_u16::<NetworkEndian>(Self::PEER_FOUND)?;
                 peer_found.write_bytes(buffer)?;
-            },
+            }
             Message::PredecessorGet(predecessor_get) => {
                 buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_GET)?;
             }
             Message::PredecessorReply(predecessor_reply) => {
                 buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_REPLY)?;
                 predecessor_reply.write_bytes(buffer)?;
-            },
+            }
             Message::PredecessorSet(predecessor_set) => {
                 buffer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
             }
@@ -167,11 +214,5 @@ impl Message {
         buffer.as_mut_slice().write_u16::<NetworkEndian>(size as u16)?;
 
         Ok(())
-    }
-}
-
-impl fmt::Debug for Message {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        unimplemented!()
     }
 }

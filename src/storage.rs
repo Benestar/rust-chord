@@ -8,14 +8,16 @@ use std::iter::FromIterator;
 ///
 /// # Examples
 ///
-/// ```
-/// let mut storage = Storage::new("/tmp/dht_storage");
+/// ```no_run
+/// # use dht::storage::Storage;
+/// #
+/// let mut storage = Storage::new("/tmp/dht_storage".to_string()).unwrap();
 ///
-/// storage.insert("foo", [42; 1000]);
+/// storage.insert("foo", &[42; 10]).unwrap();
 /// assert!(storage.contains_key("foo"));
 ///
-/// let value = storage.get("foo");
-/// assert_eq!(value, [42; 1000]);
+/// let value = storage.get("foo").unwrap();
+/// assert_eq!(&[42; 10], &value[..]);
 /// ```
 pub struct Storage {
     path: String,

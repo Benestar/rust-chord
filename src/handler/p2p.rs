@@ -11,13 +11,19 @@ use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
 use storage::Storage;
 
+/// Handler for peer-to-peer requests
+///
+/// The supported incoming peer-to-peer messages are `STORAGE GET`,
+/// `STORAGE PUT`, `PEER FIND`, `PREDECESSOR GET` and `PREDECESSOR SET`.
 pub struct P2PHandler {
     routing: Mutex<Routing<SocketAddr>>,
     storage: Mutex<Storage>
 }
 
 impl P2PHandler {
+    /// Creates a new `P2PHandler` instance.
     pub fn new(routing: Routing<SocketAddr>, storage: Storage) -> Self {
+        // TODO request mutexes right away
         Self {
             routing: Mutex::new(routing),
             storage: Mutex::new(storage)

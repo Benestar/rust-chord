@@ -1,10 +1,37 @@
+//! This module allows to obtain identifiers from different data structures.
+//!
+//! The [`Identifier`] struct represents a 256 bit identifier obtained using
+//! the SHA256 hashing algorithm. The identifier is meant to be part of an
+//! identifier circle consisting of all non-negative integers modulo 2^256.
+//!
+//! Using the [`Identify`] trait, different data structures like ip addresses
+//! can be associated with an identifier and stored accordingly.
+//!
+//! The [`IdentifierValue`] struct stores the identifier along with the original
+//! value to avoid having to recalculate the hash value multiple times.
+//!
+//! [`Identifier`]: struct.Identifier.html
+//! [`Identify`]: trait.Identify.html
+//! [`IdentifierValue`]: struct.IdentifierValue.html
+
 use bigint::U256;
 use ring::digest;
+use std::fmt::{self, Debug};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
+/// A 256 bit identifier on an identifier circle
+#[derive(PartialEq)]
 pub struct Identifier(U256);
 
 impl Identifier {
+    /// Creates a new identifier from a byte slice.
+    ///
+    /// This method does not perform any hashing but interprets the bytes as
+    /// a raw identifier.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the slice does not contain exactly 32 elements.
     pub fn new(identifier: &[u8]) -> Self {
         Identifier(U256::from_big_endian(identifier))
     }
@@ -14,6 +41,22 @@ impl Identifier {
         Self::new(dig.as_ref())
     }
 
+    /// Returns whether this identifier is between `first` and `second` on the
+    /// identifier circle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::Identifier;
+    /// #
+    /// let id1 = Identifier::new(&[1; 32]);
+    /// let id2 = Identifier::new(&[2; 32]);
+    /// let id3 = Identifier::new(&[3; 32]);
+    ///
+    /// assert!(id2.is_between(&id1, &id3));
+    /// assert!(id3.is_between(&id2, &id1));
+    /// assert!(!id3.is_between(&id1, &id2));
+    /// ```
     pub fn is_between(&self, first: &Identifier, second: &Identifier) -> bool {
         let (diff1, _) = second.0.overflowing_sub(self.0);
         let (diff2, _) = second.0.overflowing_sub(first.0);
@@ -21,6 +64,17 @@ impl Identifier {
         diff1 < diff2
     }
 
+    /// Returns the raw bytes of this identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::Identifier;
+    /// #
+    /// let id = Identifier::new(&[5; 32]);
+    ///
+    /// assert_eq!([5; 32], id.as_bytes());
+    /// ```
     pub fn as_bytes(&self) -> [u8; 32] {
         let mut bytes = [0; 32];
         self.0.to_big_endian(&mut bytes);
@@ -28,22 +82,33 @@ impl Identifier {
     }
 }
 
+impl Debug for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        (self.0).0.fmt(f)
+    }
+}
+
+/// Trait to obtain an identifier from a data structure
 pub trait Identify {
+    /// Generates an identifier for this object.
     fn get_identifier(&self) -> Identifier;
 }
 
+/// Obtains an identifier by hashing the four octets of the ip address.
 impl Identify for SocketAddrV4 {
     fn get_identifier(&self) -> Identifier {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
+/// Obtains an identifier by hashing the first 16 octets of the ip address.
 impl Identify for SocketAddrV6 {
     fn get_identifier(&self) -> Identifier {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
+/// Get the identifier for a V4 or V6 socket address.
 impl Identify for SocketAddr {
     fn get_identifier(&self) -> Identifier {
         match self {
@@ -53,28 +118,54 @@ impl Identify for SocketAddr {
     }
 }
 
+/// Hashes the whole array to get an identifier.
 impl Identify for [u8; 32] {
     fn get_identifier(&self) -> Identifier {
         Identifier::generate(self.as_ref())
     }
 }
 
+/// Container for a value and its identifier
 pub struct IdentifierValue<T> {
     value: T,
     identifier: Identifier
 }
 
 impl<T: Identify> IdentifierValue<T> {
+    /// Obtains the identifier for the given `value` and stores it along with
+    /// the value in an `IdentifierValue` object.
     pub fn new(value: T) -> Self {
         let identifier = value.get_identifier();
 
         Self { value, identifier }
     }
 
+    /// Returns the value in this struct.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::IdentifierValue;
+    /// #
+    /// let idv = IdentifierValue::new([4; 32]);
+    ///
+    /// assert_eq!([4; 32], *idv.get_value());
+    /// ```
     pub fn get_value(&self) -> &T {
         &self.value
     }
 
+    /// Returns the identifier obtained during the creation of this object.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use dht::routing::identifier::{IdentifierValue, Identify};
+    /// #
+    /// let idv = IdentifierValue::new([4; 32]);
+    ///
+    /// assert_eq!([4; 32].get_identifier(), *idv.get_identifier());
+    /// ```
     pub fn get_identifier(&self) -> &Identifier {
         &self.identifier
     }

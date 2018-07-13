@@ -20,8 +20,11 @@ use threadpool::ThreadPool;
 ///
 /// # Examples
 ///
-/// ```
-/// let mut con = Connection::open("localhost:8080", 3600);
+/// ```no_run
+/// # use dht::network::Connection;
+/// #
+/// let mut con = Connection::open("127.0.0.1:8080", 3600)
+///     .expect("Could not open connection");
 ///
 /// let msg = con.receive().expect("could not receive message");
 /// con.send(&msg).expect("could not send message");
@@ -50,6 +53,7 @@ impl Connection {
     pub fn open<A: ToSocketAddrs>(addr: A, timeout_ms: u64)
         -> io::Result<Self>
     {
+        // TODO add connection timeout
         let stream = TcpStream::connect(addr)?;
 
         let timeout = Duration::from_millis(timeout_ms);
@@ -60,6 +64,7 @@ impl Connection {
     }
 
     fn from_stream(stream: TcpStream) -> Self {
+        // TODO set read and write timeout
         let buffer = Vec::with_capacity(Message::MAX_LENGTH);
         Self { stream, buffer }
     }
@@ -144,7 +149,7 @@ pub trait ServerHandler {
     fn handle_incoming(&self, result: io::Result<TcpStream>) {
         match result {
             Ok (stream) => {
-                // TODO handle time outs
+                // TODO handle timeouts
                 let connection = Connection::from_stream(stream);
                 self.handle_connection(connection)
             },
@@ -157,10 +162,21 @@ pub trait ServerHandler {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
+/// # use dht::network::*;
+/// # use std::io;
+/// #
+/// # struct TestHandler;
+/// # impl ServerHandler for TestHandler {
+/// #     fn handle_connection(&self, _: Connection) {}
+/// #     fn handle_error(&self, _: io::Error) {}
+/// # }
+/// #
+/// # let handler = TestHandler;
+/// #
 /// let server = Server::new(Box::new(handler));
 ///
-/// server.listen("127.0.0.1:80", 4)
+/// server.listen("127.0.0.1:8080", 4)
 ///     .expect("could not bind to port");
 /// ```
 pub struct Server {

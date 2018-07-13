@@ -5,12 +5,17 @@ use network::{Connection, ServerHandler};
 use std::error::Error;
 use std::io;
 
+/// Handler for api requests
+///
+/// The supported incoming api messages are `DHT GET` and `DHT PUT`.
 pub struct ApiHandler {
 
 }
 
 impl ApiHandler {
-    fn handle_dht_get(&self, mut con: Connection, dht_get: DhtGet) -> ::Result<()> {
+    fn handle_dht_get(&self, mut con: Connection, dht_get: DhtGet)
+        -> ::Result<()>
+    {
         // 1. find peer for id obtained from key
 
         // 2. send STORAGE GET message to that peer
@@ -21,7 +26,9 @@ impl ApiHandler {
         unimplemented!()
     }
 
-    fn handle_dht_put(&self, mut con: Connection, dht_put: DhtPut) -> ::Result<()> {
+    fn handle_dht_put(&self, mut con: Connection, dht_put: DhtPut)
+        -> ::Result<()>
+    {
         // 1. find peer for id obtained from key
 
         // 2. send STORAGE PUT message to that peer

@@ -66,11 +66,11 @@ extern crate threadpool;
 
 use std::error::Error;
 
-mod error;
-mod handler;
-mod message;
-mod network;
-mod routing;
-mod storage;
+pub mod error;
+pub mod handler;
+pub mod message;
+pub mod network;
+pub mod routing;
+pub mod storage;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
