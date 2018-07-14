@@ -80,7 +80,7 @@ impl Connection {
         let size = self.stream.read(self.buffer.as_mut())?;
 
         // create cursor to parse message
-        Message::parse(&mut Cursor::new(&self.buffer[..size]))
+        Message::parse(Cursor::new(&self.buffer[..size]))
     }
 
     /// Sends a message to the remote peer.
@@ -88,7 +88,7 @@ impl Connection {
     /// This operation is blocking until the message has been sent.
     pub fn send(&mut self, msg: &Message) -> io::Result<()> {
         // create cursor to write message
-        let size = msg.write_to(&mut Cursor::new(self.buffer.as_mut()))?;
+        let size = msg.write_to(Cursor::new(self.buffer.as_mut()))?;
 
         // write bytes to tcp stream
         self.stream.write_all(&self.buffer[..size])

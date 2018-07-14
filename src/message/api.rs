@@ -1,6 +1,7 @@
-use std::io::prelude::*;
-use std::io;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
+use std::io;
+use std::io::prelude::*;
+use super::MessagePayload;
 
 /// This message is used to ask the DHT module that the given key-value pair
 /// should be stored.
@@ -19,7 +20,7 @@ use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 /// It is expected that the DHT module upon receiving this message does its best
 /// effort in storing the given key-value pair. No confirmation is needed for
 /// the PUT operation.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DhtPut {
     pub ttl: u16,
     pub replication: u8,
@@ -33,7 +34,7 @@ pub struct DhtPut {
 /// No immediate is reply is expected after sending this message to the DHT
 /// module. The module should however start with its best effort to search for
 /// the given key.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DhtGet {
     pub key: [u8; 32]
 }
@@ -42,7 +43,7 @@ pub struct DhtGet {
 /// corresponding to the requested key in the network.
 ///
 /// [`DhtGet`]: struct.DhtGet.html
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DhtSuccess {
     pub key: [u8; 32],
     pub value: Vec<u8>
@@ -52,13 +53,13 @@ pub struct DhtSuccess {
 /// value for the requested key.
 ///
 /// [`DhtGet`]: struct.DhtGet.html
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DhtFailure {
     pub key: [u8; 32]
 }
 
-impl DhtPut {
-    pub fn parse<T: Read>(mut reader: T) -> io::Result<Self> {
+impl MessagePayload for DhtPut {
+    fn parse(reader: &mut Read) -> io::Result<Self> {
         let ttl = reader.read_u16::<NetworkEndian>()?;
         let replication = reader.read_u8()?;
 
@@ -74,7 +75,7 @@ impl DhtPut {
         Ok(DhtPut { ttl, replication, key, value })
     }
 
-    pub fn write_to<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication)?;
         writer.write_u8(0)?;
@@ -85,25 +86,23 @@ impl DhtPut {
     }
 }
 
-
-
-impl DhtGet {
-    pub fn parse<T: Read>(reader: &mut T) -> io::Result<Self> {
+impl MessagePayload for DhtGet {
+    fn parse(reader: &mut Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
         Ok(DhtGet { key })
     }
 
-    pub fn write_to<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write(&self.key)?;
 
         Ok(())
     }
 }
 
-impl DhtSuccess {
-    pub fn parse<T: Read>(reader: &mut T) -> io::Result<Self> {
+impl MessagePayload for DhtSuccess {
+    fn parse(reader: &mut Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
@@ -113,7 +112,7 @@ impl DhtSuccess {
         Ok(DhtSuccess { key, value })
     }
 
-    pub fn write_to<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write(&self.key)?;
         writer.write(&self.value)?;
 
@@ -121,17 +120,93 @@ impl DhtSuccess {
     }
 }
 
-impl DhtFailure {
-    pub fn parse<T: Read>(reader: &mut T) -> io::Result<Self> {
+impl MessagePayload for DhtFailure {
+    fn parse(reader: &mut Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
         Ok(DhtFailure { key })
     }
 
-    pub fn write_to<T: Write>(&self, writer: &mut T) -> io::Result<()> {
+    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write(&self.key)?;
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::tests::test_message_payload;
+
+    #[test]
+    fn dht_put() {
+        let buf = [
+            // TTL, replication and reserved
+            0, 12, 4, 0,
+            // 32 bytes for key
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            // value
+            1, 2, 3, 4, 5,
+        ];
+
+        let msg = DhtPut {
+            ttl: 12,
+            replication: 4,
+            key: [3; 32],
+            value: vec![1, 2, 3, 4, 5],
+        };
+
+        test_message_payload(&buf, msg);
+    }
+
+    #[test]
+    fn dht_get() {
+        let buf = [
+            // 32 bytes for key
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        ];
+
+        let msg = DhtGet {
+            key: [3; 32],
+        };
+
+        test_message_payload(&buf, msg);
+    }
+
+    #[test]
+    fn dht_success() {
+        let buf = [
+            // 32 bytes for key
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            // value
+            1, 2, 3, 4, 5,
+        ];
+
+        let msg = DhtSuccess {
+            key: [3; 32],
+            value: vec![1, 2, 3, 4, 5],
+        };
+
+        test_message_payload(&buf, msg);
+    }
+
+    #[test]
+    fn dht_failure() {
+        let buf = [
+            // 32 bytes for key
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+            3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+        ];
+
+        let msg = DhtFailure {
+            key: [3; 32],
+        };
+
+        test_message_payload(&buf, msg);
     }
 }
