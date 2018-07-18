@@ -1,0 +1,427 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{comment} % enables the use of multi-line comments (\ifx \fi) 
+\usepackage{lipsum} %This package just generates Lorem Ipsum filler text. 
+\usepackage{fullpage} % changes the margin
+\usepackage{todonotes}
+\usepackage{hyperref}
+\usepackage{float} % to force figure placement
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
+%\documentclass[border=10pt,png]{standalone}
+\usepackage{bytefield}
+
+\begin{document}
+    %Header-Make sure you update this information!!!!
+    \noindent
+    \large\textbf{VoidPhone Project} \hfill \textbf{Final Report}\\
+    \normalsize P2PSEC (IN2194)  \hfill Team 45 - Rhodium\\
+    Prof. Dr.-Ing Georg Carle \hfill Benedikt Seidl, Stefan Su\\
+    Sree Harsha Totakura, Dr. Heiko Niedermayer \hfill Due Date: 08/10/18
+    
+    \section{Software Documentation}
+    
+    During the past summer term we implemented a distributed hash table (DHT) based on the Chord \cite{Chord} as part of the VoidPhone Project.
+    Our project is written in Rust \cite{Rust} and has no dependencies on software outside of the Rust ecosystem.
+    Therefore it is also platform independent and should compile on every major operating system. We have tested this for various Linux distributions and macOS.
+    In the following, we elaborate on installation steps and on how to run our module, as well as the known issues of our release at the point of the deadline.
+    
+    \subsection{Dependencies}
+    
+    When you install the latest stable version of the Rust compiler\footnote{\url{https://www.rust-lang.org/en-US/install.html}}, the \emph{Cargo} build system and package manager is already included. Cargo allows to build the project and download all software dependencies automatically from the package repository \textit{Crates.io} \cite{Crates}. For this purpose, we have created a \texttt{Cargo.toml} file listing all packages (crates) and their required version required by our project. The list of the external crates and an explanation of the functionality of each package can also be found in Appendix \ref{appendix:crates}.
+    
+    \subsection{Installing and Running the Project}
+    
+    The project can be built by running \texttt{cargo build} in the project root directory. By default, a debug version is created but one can obtain further optimizations with the \texttt{--release} flag. One can also generate code documentation using \texttt{cargo doc}. For further information about the Cargo build process the Cargo Book \cite{CargoBook} is a great reference.
+    
+    Our project compiles to different targets. The \texttt{dht} binary starts a node in the peer-to-peer network and implements the api as defined in the project specification. Additionally, we provide an \texttt{api} target which is a small command line client that uses the specified api to get and store values from the distributed hash table.
+    
+    To run the program, one can either execute one of the resulting binaries in the \texttt{target/} folder or use the Cargo command \texttt{cargo run}. The \texttt{--bin} argument must be set to either \texttt{dht} or \texttt{api}. Any command line arguments for the binary can then be appended after separating it with two dashes (\texttt{--}). In Table \ref{table:parameters} all available parameters are described. Furthermore, in Appendix \ref{appendix:commands} some example commands are listed for starting a new network and joining a network using a bootstrap peer.
+    
+    \begin{figure}[H]
+        \begin{longtable}{l l l}
+            \toprule
+            \textbf{Parameter} & \textbf{Purpose} & \textbf{Example} \\
+            \midrule
+            \texttt{-h, --help}     & Prints help information        & \\
+            \texttt{-q, --quiet}    & Silence all output             & \\
+            \texttt{-V, --version}  & Prints version information     & \\
+            \texttt{-v}             & Level of verbosity             & \texttt{v, vv, vvv, ...} \\
+            \texttt{-b <bootstrap>} & Address of a bootstrap peer    & \texttt{192.168.0.1:31415} \\
+            \texttt{-c <config>}    & Path to a custom config file   & \\
+            \texttt{-t <timestamp>} & Print timestamps in log        & \texttt{sec, ms, ns, none} \\
+            \bottomrule
+        \end{longtable}
+        \caption{List of parameters}
+        \label{table:parameters}
+    \end{figure}
+    
+    For testing convenience we created the a cli interface that enables us to send DHT PUT and DHT GET messages to our local peer. After running the \texttt{api} binary one can enter either ``get'' or ``put'' and provide the key and/or value to compose the desired message. The program will then send the message to the local peer and afterwards print the result on the command line. This script also requires a \texttt{-c} parameter for the path of the same config file as the local peer is using.
+    
+    \subsection{Configuration}
+    
+    The distributed hash table can be configured using a \texttt{config.ini} file which contains several parameters, some of which are required. As defined in the specification, the \texttt{listen\_address} and \texttt{api\_address} define the listen addresses for api and peer-to-peer connections. The other parameters are optional and provided with sensible defaults as described in table \ref{table:config}.
+    
+    
+    \begin{figure}[H]
+        \begin{longtable}{l l r}
+            \toprule
+            \textbf{Option} & \textbf{Purpose} & \textbf{Default} \\
+            \midrule
+            \texttt{listen\_address}         & Listen address for peer-to-peer communication       & - \\
+            \texttt{api\_address}            & Listen address for api connections                  & - \\
+            \texttt{worker\_threads}         & Number of threads handling peer-to-peer connections & 4 \\
+            \texttt{timeout}                 & Connection timeout in milliseconds                  & 300000 \\
+            \texttt{fingers}                 & Number of entries in the finger table               & 128 \\
+            \texttt{stabilization\_interval} & Time interval for stabilization in seconds          & 60 \\
+            \bottomrule
+        \end{longtable}
+        \caption{Config options}
+        \label{table:config}
+    \end{figure}
+    
+    \section{Inter-module protocol}
+    
+    We implement the Chord protocol as described in the paper by Stoica et al. \cite{Chord} where the identifiers of keys and peers are located on an identifier circle based on consistent hashing. In the following section we define the different message formats used by our implementation.
+    
+    Our message formats can be divided in two sections, according to the distinction we made in the introduction of this document. First we define the high level storage related message types which operate on direct connections to the targeted peer. After that we introduce our routing protocol messages which allow us to find nodes in the network efficiently by hopping over several other nodes on the way. The message type ids used for each of the defined messages can be found in Appendix \ref{appendix:message-types}.
+    
+    \subsection{Storage messages}
+    
+    The storage protocol allows to store and receive messages from another peer. The contacted peer should only handle these messages if it is actually responsible for the provided key. Therefore, these messages can only be used if the IP address of the peer is already known.
+    
+    The \SI{256}{bit} raw key obtained from the api request is extended by one byte which contains the replication index. The identifier for the key is obtained by appending the replication index and hashing the resulting 33 byte array. This results in the same raw key with different indices being replicated to completely different positions in the P2P network. This makes it harder to gain control over every node storing this particular value.
+    
+    \subsubsection{STORAGE GET}
+    \label{STORAGEGET}
+    
+    This message can be sent directly to a peer which is responsible for the given key. The peer looks whether it has stored a value for the given key and returns it in a STORAGE GET SUCCESS message (see section \ref{STORAGEGETSUCCESS}).
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET}}
+            \end{rightwordgroup} \\
+            \bitbox{8}{replication index} & 
+            \bitbox[lrb]{24}{reserved} \\
+            \wordbox[lr]{1}{raw key (256 bits)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+        \end{bytefield}
+        \caption{STORAGE GET message}
+    \end{figure}
+    
+    \subsubsection{STORAGE PUT}
+    \label{STORAGEPUT}
+    
+    To store a message at a specific peer of which the IP address is already known, one can send this message. The peer should answer with a STORAGE PUT SUCCESS message (see section \ref{STORAGEPUTSUCCESS}) if the operation succeeded.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT}}
+            \end{rightwordgroup} \\
+            \bitbox{16}{TTL} & \bitbox{8}{replication index} & \bitbox{8}{reserved}\\
+            \wordbox[lrt]{1}{raw key (256 bits)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \wordbox[lrt]{1}{value} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+        \end{bytefield}
+        \caption{STORAGE PUT message}
+    \end{figure}
+    
+    \subsubsection{STORAGE GET SUCCESS}
+    \label{STORAGEGETSUCCESS}
+    
+    If after a STORAGE GET message (see section \ref{STORAGEGET}) the key was found, the peer should reply with the corresponding value attached to this message.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE GET SUCCESS}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{raw key (256 bits)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \wordbox[lrt]{1}{value} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+        \end{bytefield}
+        \caption{STORAGE GET SUCCESS message}
+    \end{figure}
+    
+    \subsubsection{STORAGE PUT SUCCESS}
+    \label{STORAGEPUTSUCCESS}
+    
+    After a successful STORAGE PUT operation (see section \ref{STORAGEPUT}), the peer should reply with this success message.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE PUT SUCCESS}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{raw key (256 bits)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+        \end{bytefield}
+        \caption{STORAGE PUT SUCCESS message}
+    \end{figure}
+    
+    \subsubsection{STORAGE FAILURE}
+    \label{STORAGEFAILURE}
+    
+    If a STORAGE GET (see section \ref{STORAGEGET}) or STORAGE PUT (see section \ref{STORAGEPUT}) operation fails for some reason, this message should be sent back. However, one cannot rely on a failure message being sent back since there can also be timeouts or other issues.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{STORAGE FAILURE}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{raw key (256 bits)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+        \end{bytefield}
+        \caption{STORAGE FAILURE message}
+    \end{figure}
+    
+    
+    \subsection{Routing messages}
+    
+    Since we use Chord as the underlying routing protocol, every peer has a unique location on the identifier circle obtained by hashing its IP address. It is responsible for all identifiers preceding it on the circle until the previous node.
+    
+    To find a peer which is responsible for one given identifier, one has to ask other peers iteratively until the relevant peer has been found. This can be optimized by using a finger table which contains pointers into the identifier circle in exponentially growing distances. By following these fingers iteratively until another peer returns its own address, a result will be obtained in logarithmic time.
+    
+    Additionally, the P2P network needs to be kept stable since new peers may join and other peers can drop out of the network. Therefore, every peer executes a stabilization routine regularly to update its finger table as well as its predecessor and successor pointer.
+    
+    \subsubsection{PEER FIND}
+    \label{PEERFIND}
+    
+    This message initiates a lookup for a node responsible for the given identifier. The receiving peer is expected to reply with the known peer closest to the requested identifier on the circle using PEER FOUND (see section \ref{PEERFOUND}).
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{PEER FIND}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{identifier (256 bit)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{}
+        \end{bytefield}
+        \caption{PEER FIND message}
+    \end{figure} 
+    
+    \subsubsection{PEER FOUND}
+    \label{PEERFOUND}
+    
+    If, after a PEER FIND (see section \ref{PEERFIND}) operation, a node has been found which is closest to the given identifier, the address of that peer should be included in this message. If the requested peer is responsible for the identifier, it will reply with its own address.
+    
+    The address is always an IPv6 address. To represent an IPv4 address one can use the standardized IPv4-Mapped IPv6 address by appending the address to a string of 80 zeros and 16 ones, for example \texttt{::ffff:127.0.0.1} \cite{RFC4291}.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{PEER FOUND}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{identifier (256 bit)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \wordbox[lrt]{1}{IPv6 address (128 bit)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \bitbox{16}{port} \\
+        \end{bytefield}
+        \caption{PEER FOUND message}
+    \end{figure}
+    
+    \subsubsection{PREDECESSOR NOTIFY}
+    \label{PREDECESSORNOTIFY}
+    
+    This message allows to notify some other peer of a potentially new predecessor. The receiving peer may use the given address to update its predecessor afterwards if applicable. IPv4 addresses are represented as described in section \ref{PEERFOUND}.
+    
+    Furthermore, the peer is expected to answer with a PREDECESSOR REPLY message (see section \ref{PREDECESSORREPLY}) including the address of its current predecessor.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR NOTIFY}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{IPv6 address (128 bit)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \bitbox{16}{port} \\
+        \end{bytefield}
+        \caption{PREDECESSOR NOTIFY message}
+    \end{figure}
+    
+    \subsubsection{PREDECESSOR REPLY}
+    \label{PREDECESSORREPLY}
+    
+    When a peer receives a PREDECESSOR NOTIFY message (see section \ref{PREDECESSORNOTIFY}), it is expected to reply with this message including the address of its predecessor. IPv4 addresses are represented as described in section \ref{PEERFOUND}.
+    
+    \begin{figure}[H]
+        \centering
+        \begin{bytefield}[bitwidth=1.0em]{32}
+            \bitheader{0,7,8,15,16,23,24,31} \\
+            \begin{rightwordgroup}{Message \\  Header}
+                \bitbox{16}{size} & \bitbox{16}{\texttt{PREDECESSOR REPLY}}
+            \end{rightwordgroup} \\
+            \wordbox[lrt]{1}{IPv6 address (128 bit)} \\
+            \skippedwords \\
+            \wordbox[lrb]{1}{} \\
+            \bitbox{16}{port} \\
+        \end{bytefield}
+        \caption{PREDECESSOR REPLY message}
+    \end{figure} 
+    
+    \section{Limitations and Future Work}
+    
+    Since we had limited time to implement such a extensive project, there are some limitations in the current state of our implementation. In this section we explain which issues exist and which steps could be taken to eliminate them in a future version of our module.
+    
+    \subsection{Routing Stability}
+    
+    Our distributed hash table implements the defined behaviour as expected as long as the network remains stable and no churn occurs. However, there are currently no proper measures to handle node failures and peer leaving the network unexpectedly. This could be solved relatively easily by storing a successor list instead of just one successor. However, this requires an extension of the stabilization algorithm which we did not achieve in the given time period.
+    
+    Furthermore, another issue is that on setting a new predecessor, a peer currently does not give that peer responsibility for the values stored in its identifier range. To achieve this, the peer should send STORAGE PUT messages to its new predecessor obtained from a PREDECESSOR NOTIFY request. This is also an easy to implement extension of our current code base.
+    
+    \subsection{Availability of Values}
+    
+    Currently our peers ignore the TTL field and store the values as long as they are part of the network. It should be easy to discard any values which exceeded their time to live. Furthermore, by storing the values not only on one peer but also on $n$ of its successors, one can increase the probability that the value is available during the whole TTL and not lost before.
+    
+    We do however respect the replication field and store as many copies of the value as required. Since we include the replication index during hashing to obtain the identifier, each replica is stored in a different part of the network. We could use this to improve lookup times for DHT GET requests by searching for different replication indices simultaneously instead of linearly.
+    
+    \subsection{Attack Resistance}
+    
+    To make the network more resistant against a possible Sybil attack, we should employ additional identity validation measures. It is already hard to get control over a whole identifier range since a peer's identifier is obtained by hashing its IP address. However, we could increase the cost of obtaining multiple identities by employing a challenge based on some proof of work during stabilization. Additionally, in order to counter possible Eclipse attacks, we can add proximity constraints to the finger tables to avoid filling it with nodes in similar IP ranges \cite{EclipseAttacks}.
+    
+    \section{Work division and Efforts}
+    
+    We started our project by considering different protocols for distributed hash tables and in a joint decision opted to implement Chord. Together, we worked through the Chord paper \cite{Chord} and designed our peer-to-peer messages accordingly. We then divided the implementation workload in smaller units and distributed them among ourselves.
+    
+    Benedikt took care of designing the foundations of the application architecture and routing data structures and Stefan implemented the message parsing and serialization. Afterwards, we were able to work on the peer-to-peer interface (Benedikt) and api endpoint (Stefan) independently. However, each code change was first done in a feature branch so that we could review each other's code in granular merge requests.
+    
+    \pagebreak
+    
+    \bibliographystyle{IEEEtran}
+    \bibliography{../bibliography}
+    
+    \pagebreak
+    
+    \renewcommand\thesection{\Alph{section}}
+    \setcounter{section}{0}
+    \section{Message Types}
+    \label{appendix:message-types}
+    
+    This enumeration defines the messages types. All numbers are in decimal system.
+    
+    \begin{enumerate}
+        \setcounter{enumi}{999}
+        \item \texttt{STORAGE GET}
+        \item \texttt{STORAGE PUT}
+        \item \texttt{STORAGE GET SUCCESS}
+        \item \texttt{STORAGE PUT SUCCESS}
+        \item \texttt{STORAGE FAILURE}
+    \end{enumerate}
+    
+    $\vdots$
+    
+    \begin{enumerate}
+        \setcounter{enumi}{1048}
+        \item (reserved until here for Storage messages)
+        \item \texttt{PEER FIND}
+        \item \texttt{PEER FOUND}
+        \item \texttt{PREDECESSOR NOTIFY}
+        \item \texttt{PREDECESSOR REPLY}
+    \end{enumerate}
+    
+    \pagebreak
+    
+    \section{External Crates}
+    \label{appendix:crates}
+    
+    In the following we list all our dependencies from \textit{Crates.io} as defined in our \texttt{Cargo.toml} file.
+    
+    \begin{figure}[H]
+        \begin{longtable}{l l r}
+            \toprule
+            \textbf{Crate} & \textbf{Purpose} & \textbf{Version} \\
+            \midrule
+            bigint    & 	Provide $\SI{256}{bit}$ integer arithmetic                                         & 4.4.0  \\
+            byteorder &     Write integers in big or little endian                                             & 1.2.3  \\
+            log       &		Provide logging with different verbosity levels                                    & 0.4.3  \\
+            ring      & 	Cryptographic operations based on \textit{BoringSSL}\protect\footnotemark          & 0.12.1 \\
+            rust-ini  & 	Parse Windows \texttt{ini}-files                                                   & 0.12.2 \\
+            stderrlog & 	Log output generator using \textit{stdout}                                         & 0.4.1  \\
+            structopt &     Ease the parsing of command line arguments                                         & 0.2.10 \\
+            threadpool&     Distributes work between different threads                                         & 1.7.1  \\
+            \bottomrule
+        \end{longtable}
+        \caption{List of external crates}
+        \label{table:crates}
+    \end{figure}
+    
+    \footnotetext{\url{https://boringssl.googlesource.com/boringssl/}}
+    
+    \pagebreak
+    
+    \section{Example Commands}
+    \label{appendix:commands}
+    
+    After deciding for a bootstrap peer and distributing its public socket address to nodes who wish to join the network, the DHT module of the bootstrap peer can be started by running
+    
+    To join an existing network using a bootstrap peer, the peer's socket address should be supplied using the \texttt{-b} parameter as follows.
+    
+    \begin{figure}[H]
+    \begin{lstlisting}[language=bash]
+    $ cargo run -bin dht -- 
+        -c <config-file> 
+        -b <socket-addr>
+        -v <verbosity level> 
+        -t <timestamp>
+    \end{lstlisting}
+    \caption{Join a network using a bootstrap peer}
+    \end{figure}
+    
+    If however no bootstrap peer is known and a new network should be started, one can just omit the parameter. Then no bootstrapping is performed and the routing information points to the peer itself.
+    
+    \begin{figure}[H]
+    \begin{lstlisting}[language=bash]
+    $ cargo run -bin dht -- 
+        -c <config-file> 
+        -v <verbosity level> 
+        -t <timestamp>
+    \end{lstlisting}
+    \caption{Start a new network without a bootstrap peer}
+    \end{figure}
+    
+    The following example shows how to use the api command line interface tool. The config file provided by \texttt{-c} should be the same as the one used to start the distributed hash table on the current peer.
+    
+    \begin{figure}[H]
+    \begin{lstlisting}[language=bash]
+    $ cargo run -bin api -- 
+        -c <config-file>
+    \end{lstlisting}
+    \caption{Run the api cli}
+    \end{figure}
+    
+\end{document}
+
