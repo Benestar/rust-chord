@@ -79,8 +79,8 @@ impl MessagePayload for DhtPut {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication)?;
         writer.write_u8(0)?;
-        writer.write(&self.key)?;
-        writer.write(&self.value)?;
+        writer.write_all(&self.key)?;
+        writer.write_all(&self.value)?;
 
         Ok(())
     }
@@ -95,7 +95,7 @@ impl MessagePayload for DhtGet {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
+        writer.write_all(&self.key)?;
 
         Ok(())
     }
@@ -113,8 +113,8 @@ impl MessagePayload for DhtSuccess {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
-        writer.write(&self.value)?;
+        writer.write_all(&self.key)?;
+        writer.write_all(&self.value)?;
 
         Ok(())
     }
@@ -129,7 +129,7 @@ impl MessagePayload for DhtFailure {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
+        writer.write_all(&self.key)?;
 
         Ok(())
     }

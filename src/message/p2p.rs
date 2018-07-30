@@ -115,7 +115,7 @@ impl MessagePayload for StorageGet {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
+        writer.write_all(&self.key)?;
 
         Ok(())
     }
@@ -142,8 +142,8 @@ impl MessagePayload for StoragePut {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication)?;
         writer.write_u8(0)?;
-        writer.write(&self.key)?;
-        writer.write(&self.value)?;
+        writer.write_all(&self.key)?;
+        writer.write_all(&self.value)?;
 
         Ok(())
     }
@@ -161,8 +161,8 @@ impl MessagePayload for StorageGetSuccess {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
-        writer.write(&self.value)?;
+        writer.write_all(&self.key)?;
+        writer.write_all(&self.value)?;
 
         Ok(())
     }
@@ -180,8 +180,8 @@ impl MessagePayload for StoragePutSuccess {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
-        writer.write(&self.value_hash)?;
+        writer.write_all(&self.key)?;
+        writer.write_all(&self.value_hash)?;
 
         Ok(())
     }
@@ -196,7 +196,7 @@ impl MessagePayload for StorageFailure {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.key)?;
+        writer.write_all(&self.key)?;
 
         Ok(())
     }
@@ -212,7 +212,7 @@ impl MessagePayload for PeerFind {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.identifier.as_bytes())?;
+        writer.write_all(&self.identifier.as_bytes())?;
 
         Ok(())
     }
@@ -242,14 +242,14 @@ impl MessagePayload for PeerFound {
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write(&self.identifier.as_bytes())?;
+        writer.write_all(&self.identifier.as_bytes())?;
 
         let ip_address = match self.socket_addr.ip() {
             IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
             IpAddr::V6(ipv6) => ipv6
         };
 
-        writer.write(&ip_address.octets())?;
+        writer.write_all(&ip_address.octets())?;
         writer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
 
         Ok(())
@@ -291,7 +291,7 @@ impl MessagePayload for PredecessorReply {
             IpAddr::V6(ipv6) => ipv6
         };
 
-        writer.write(&ip_address.octets())?;
+        writer.write_all(&ip_address.octets())?;
         writer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
 
         Ok(())

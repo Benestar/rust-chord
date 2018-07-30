@@ -106,7 +106,7 @@ impl Message {
                                       "Size must include header"))
         }
 
-        let reader = &mut reader.take(size as u64 - 4);
+        let reader = &mut reader.take(u64::from(size) - 4);
 
         match msg_type {
             Self::DHT_PUT =>
