@@ -18,6 +18,7 @@ use bigint::U256;
 use ring::digest;
 use std::fmt::{self, Debug};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
+use storage::Key;
 
 /// A 256 bit identifier on an identifier circle
 #[derive(Copy, Clone, PartialEq)]
@@ -158,10 +159,13 @@ impl Identify for SocketAddr {
     }
 }
 
-/// Hashes the whole array to get an identifier.
-impl Identify for [u8; 33] {
+/// Hashes the raw key and its replication index.
+impl Identify for Key {
     fn get_identifier(&self) -> Identifier {
-        Identifier::generate(self.as_ref())
+        let mut bytes = [0; 33];
+        bytes[..32].copy_from_slice(&self.raw_key);
+        bytes[32] = self.replication_index;
+        Identifier::generate(&bytes)
     }
 }
 

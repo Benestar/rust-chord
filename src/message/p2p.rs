@@ -15,7 +15,7 @@ use super::MessagePayload;
 #[derive(Debug, PartialEq)]
 pub struct StorageGet {
     pub replication_index: u8,
-    pub key: [u8; 32]
+    pub raw_key: [u8; 32]
 }
 
 /// To store a message at a specific peer of which the ip address is already
@@ -27,7 +27,7 @@ pub struct StorageGet {
 pub struct StoragePut {
     pub ttl: u16,
     pub replication_index: u8,
-    pub key: [u8; 32],
+    pub raw_key: [u8; 32],
     pub value: Vec<u8>
 }
 
@@ -37,7 +37,7 @@ pub struct StoragePut {
 /// [`StorageGet`]: struct.StorageGet.html
 #[derive(Debug, PartialEq)]
 pub struct StorageGetSuccess {
-    pub key: [u8; 32],
+    pub raw_key: [u8; 32],
     pub value: Vec<u8>
 }
 
@@ -50,7 +50,7 @@ pub struct StorageGetSuccess {
 /// [`StoragePut`]: struct.StoragePut.html
 #[derive(Debug, PartialEq)]
 pub struct StoragePutSuccess {
-    pub key: [u8; 32]
+    pub raw_key: [u8; 32]
 }
 
 /// If a [`StorageGet`] or [`StoragePut`] fails for some reason, this message
@@ -61,7 +61,7 @@ pub struct StoragePutSuccess {
 /// [`StoragePut`]: struct.StoragePut.html
 #[derive(Debug, PartialEq)]
 pub struct StorageFailure {
-    pub key: [u8; 32]
+    pub raw_key: [u8; 32]
 }
 
 /// This message initiates a lookup for a node responsible for the given
@@ -114,10 +114,10 @@ impl MessagePayload for StorageGet {
         reader.read_u8()?;
         reader.read_u8()?;
 
-        let mut key = [0; 32];
-        reader.read_exact(&mut key)?;
+        let mut raw_key = [0; 32];
+        reader.read_exact(&mut raw_key)?;
 
-        Ok(StorageGet { replication_index, key })
+        Ok(StorageGet { replication_index, raw_key })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
@@ -128,7 +128,7 @@ impl MessagePayload for StorageGet {
         writer.write_u8(0)?;
         writer.write_u8(0)?;
 
-        writer.write_all(&self.key)?;
+        writer.write_all(&self.raw_key)?;
 
         Ok(())
     }
@@ -142,13 +142,13 @@ impl MessagePayload for StoragePut {
         // Skip reserved field
         reader.read_u8()?;
 
-        let mut key = [0; 32];
-        reader.read_exact(&mut key)?;
+        let mut raw_key = [0; 32];
+        reader.read_exact(&mut raw_key)?;
 
         let mut value = Vec::new();
         reader.read_to_end(&mut value)?;
 
-        Ok(StoragePut { ttl, replication_index, key, value })
+        Ok(StoragePut { ttl, replication_index, raw_key, value })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
@@ -158,7 +158,7 @@ impl MessagePayload for StoragePut {
         // Fill reserved field
         writer.write_u8(0)?;
 
-        writer.write_all(&self.key)?;
+        writer.write_all(&self.raw_key)?;
         writer.write_all(&self.value)?;
 
         Ok(())
@@ -167,17 +167,17 @@ impl MessagePayload for StoragePut {
 
 impl MessagePayload for StorageGetSuccess {
     fn parse(reader: &mut Read) -> io::Result<Self> {
-        let mut key = [0; 32];
-        reader.read_exact(&mut key)?;
+        let mut raw_key = [0; 32];
+        reader.read_exact(&mut raw_key)?;
 
         let mut value = Vec::new();
         reader.read_to_end(&mut value)?;
 
-        Ok(StorageGetSuccess { key, value })
+        Ok(StorageGetSuccess { raw_key, value })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write_all(&self.key)?;
+        writer.write_all(&self.raw_key)?;
         writer.write_all(&self.value)?;
 
         Ok(())
@@ -186,14 +186,14 @@ impl MessagePayload for StorageGetSuccess {
 
 impl MessagePayload for StoragePutSuccess {
     fn parse(reader: &mut Read) -> io::Result<Self> {
-        let mut key = [0; 32];
-        reader.read_exact(&mut key)?;
+        let mut raw_key = [0; 32];
+        reader.read_exact(&mut raw_key)?;
 
-        Ok(StoragePutSuccess { key })
+        Ok(StoragePutSuccess { raw_key })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write_all(&self.key)?;
+        writer.write_all(&self.raw_key)?;
 
         Ok(())
     }
@@ -201,14 +201,14 @@ impl MessagePayload for StoragePutSuccess {
 
 impl MessagePayload for StorageFailure {
     fn parse(reader: &mut Read) -> io::Result<Self> {
-        let mut key = [0; 32];
-        reader.read_exact(&mut key)?;
+        let mut raw_key = [0; 32];
+        reader.read_exact(&mut raw_key)?;
 
-        Ok(StorageFailure { key })
+        Ok(StorageFailure { raw_key })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
-        writer.write_all(&self.key)?;
+        writer.write_all(&self.raw_key)?;
 
         Ok(())
     }
@@ -334,7 +334,7 @@ mod tests {
         ];
 
         let msg = StorageGet {
-            key: [3; 32],
+            raw_key: [3; 32],
         };
 
         test_message_payload(&buf, msg);
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn storage_put() {
         let buf = [
-            // TTL, replication and reserved
+            // TTL, replication index and reserved
             0, 12, 4, 0,
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -355,7 +355,7 @@ mod tests {
         let msg = StoragePut {
             ttl: 12,
             replication_index: 4,
-            key: [3; 32],
+            raw_key: [3; 32],
             value: vec![1, 2, 3, 4, 5]
         };
 
@@ -373,7 +373,7 @@ mod tests {
         ];
 
         let msg = StorageGetSuccess {
-            key: [3; 32],
+            raw_key: [3; 32],
             value: vec![1, 2, 3, 4, 5],
         };
 
@@ -389,7 +389,7 @@ mod tests {
         ];
 
         let msg = StoragePutSuccess {
-            key: [3; 32],
+            raw_key: [3; 32],
         };
 
         test_message_payload(&buf, msg);
@@ -404,7 +404,7 @@ mod tests {
         ];
 
         let msg = StorageFailure {
-            key: [3; 32],
+            raw_key: [3; 32],
         };
 
         test_message_payload(&buf, msg);
