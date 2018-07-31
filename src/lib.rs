@@ -66,6 +66,7 @@ extern crate threadpool;
 
 use config::Config;
 use std::error::Error;
+use std::net::SocketAddr;
 
 pub mod error;
 pub mod config;
@@ -76,10 +77,16 @@ pub mod routing;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
 
-pub fn run(config: &Config) -> Result<()> {
+pub fn run(config: &Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     println!("Distributed Hash Table based on CHORD");
     println!("-------------------------------------\n");
     println!("{:#?}\n", &config);
+
+    if let Some(addr) = bootstrap {
+        println!("Connection to bootstrap peer {}", addr);
+    } else {
+        println!("No bootstrapping peer provided, creating new network");
+    }
 
     Ok(())
 }

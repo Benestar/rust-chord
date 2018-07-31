@@ -6,7 +6,7 @@ authors = ["bene"]
 [dependencies]
 bigint = "4.4.0"
 byteorder = "1.2.3"
-clap = "2.32.0"
 ring = "0.12.1"
 rust-ini = "0.12.2"
+structopt = "0.2.10"
 threadpool = "1.7.1"

@@ -1,5 +1,6 @@
 use ini::Ini;
 use std::net::SocketAddr;
+use std::path::Path;
 
 #[derive(Debug)]
 pub struct Config {
@@ -8,8 +9,8 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load_from_file(path: &str) -> ::Result<Config> {
-        let conf = Ini::load_from_file(path)?;
+    pub fn load_from_file<P: AsRef<Path>>(filename: P) -> ::Result<Config> {
+        let conf = Ini::load_from_file(filename)?;
 
         let dht = conf.section(Some("dht"))
             .ok_or("missing section `dht`")?;
