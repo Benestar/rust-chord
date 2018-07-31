@@ -1,15 +1,16 @@
-use base64;
 use error::MessageError;
 use message::Message;
 use message::p2p::*;
 use network::{Connection, ServerHandler};
 use routing::identifier::{Identifier, Identify};
 use routing::Routing;
+use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
-use storage::Storage;
+
+type Storage = HashMap<[u8; 32], Vec<u8>>;
 
 /// Handler for peer-to-peer requests
 ///
@@ -56,10 +57,7 @@ impl P2PHandler {
             let storage = self.lock_storage()?;
 
             // 2. find value for given key
-            let enc_key = base64::encode(&key);
-
-            let msg = if storage.contains_key(&enc_key) {
-                let value = storage.get(&enc_key)?;
+            let msg = if let Some(value) = storage.get(&key).map(Vec::clone) {
                 Message::StorageGetSuccess(StorageGetSuccess { key, value })
             } else {
                 Message::StorageFailure(StorageFailure { key })
@@ -83,12 +81,10 @@ impl P2PHandler {
             let mut storage = self.lock_storage()?;
 
             // 2. save value for given key
-            let enc_key = base64::encode(&key);
-
-            let msg = if storage.contains_key(&enc_key) {
+            let msg = if storage.contains_key(&key) {
                 Message::StorageFailure(StorageFailure { key })
             } else {
-                storage.insert(&enc_key, &storage_put.value)?;
+                storage.insert(key, storage_put.value);
                 let value_hash = [0; 32];
                 Message::StoragePutSuccess(StoragePutSuccess { key, value_hash })
             };

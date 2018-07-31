@@ -58,7 +58,6 @@
 //! [w:chord]: https://en.wikipedia.org/wiki/Chord_(peer-to-peer)
 //! [w:cons]: https://en.wikipedia.org/wiki/Consistent_hashing
 
-extern crate base64;
 extern crate bigint;
 extern crate byteorder;
 extern crate ini;
@@ -74,7 +73,6 @@ pub mod handler;
 pub mod message;
 pub mod network;
 pub mod routing;
-pub mod storage;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
 
