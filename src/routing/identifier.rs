@@ -159,7 +159,7 @@ impl Identify for SocketAddr {
 }
 
 /// Hashes the whole array to get an identifier.
-impl Identify for [u8; 32] {
+impl Identify for [u8; 33] {
     fn get_identifier(&self) -> Identifier {
         Identifier::generate(self.as_ref())
     }

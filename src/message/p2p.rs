@@ -25,7 +25,7 @@ pub struct StorageGet {
 #[derive(Debug, PartialEq)]
 pub struct StoragePut {
     pub ttl: u16,
-    pub replication: u8,
+    pub replication_index: u8,
     pub key: [u8; 32],
     pub value: Vec<u8>
 }
@@ -49,9 +49,7 @@ pub struct StorageGetSuccess {
 /// [`StoragePut`]: struct.StoragePut.html
 #[derive(Debug, PartialEq)]
 pub struct StoragePutSuccess {
-    pub key: [u8; 32],
-    // TODO objective: fast hash algorithm
-    pub value_hash: [u8; 32]
+    pub key: [u8; 32]
 }
 
 /// If a [`StorageGet`] or [`StoragePut`] fails for some reason, this message
@@ -124,7 +122,7 @@ impl MessagePayload for StorageGet {
 impl MessagePayload for StoragePut {
     fn parse(reader: &mut Read) -> io::Result<Self> {
         let ttl = reader.read_u16::<NetworkEndian>()?;
-        let replication = reader.read_u8()?;
+        let replication_index = reader.read_u8()?;
 
         // Skip reserved field
         reader.read_u8()?;
@@ -135,12 +133,12 @@ impl MessagePayload for StoragePut {
         let mut value = Vec::new();
         reader.read_to_end(&mut value)?;
 
-        Ok(StoragePut { ttl, replication, key, value })
+        Ok(StoragePut { ttl, replication_index, key, value })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
-        writer.write_u8(self.replication)?;
+        writer.write_u8(self.replication_index)?;
         writer.write_u8(0)?;
         writer.write_all(&self.key)?;
         writer.write_all(&self.value)?;
@@ -173,15 +171,11 @@ impl MessagePayload for StoragePutSuccess {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
-        let mut value_hash = [0; 32];
-        reader.read_exact(&mut value_hash)?;
-
-        Ok(StoragePutSuccess { key, value_hash })
+        Ok(StoragePutSuccess { key })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write_all(&self.key)?;
-        writer.write_all(&self.value_hash)?;
 
         Ok(())
     }
@@ -342,7 +336,7 @@ mod tests {
 
         let msg = StoragePut {
             ttl: 12,
-            replication: 4,
+            replication_index: 4,
             key: [3; 32],
             value: vec![1, 2, 3, 4, 5]
         };
@@ -374,14 +368,10 @@ mod tests {
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-            // 37 bytes for value hash
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
         ];
 
         let msg = StoragePutSuccess {
             key: [3; 32],
-            value_hash: [7; 32],
         };
 
         test_message_payload(&buf, msg);

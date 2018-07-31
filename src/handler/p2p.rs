@@ -10,7 +10,29 @@ use std::io;
 use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
 
-type Storage = HashMap<[u8; 32], Vec<u8>>;
+#[derive(Hash)]
+struct ReplicatedKey {
+    key: [u8; 32],
+    replication_index: u8,
+}
+
+impl ReplicatedKey {
+    pub fn new(key: [u8; 32], replication_index: u8) -> Self {
+        Self { key, replication_index }
+    }
+}
+
+impl Identify for ReplicatedKey {
+    fn get_identifier(&self) -> Identifier {
+        let mut bytes = [0; 33];
+        bytes[..32].copy_from_slice(&self.key);
+        bytes[32] = self.replication_index;
+
+        bytes.get_identifier()
+    }
+}
+
+type Storage = HashMap<ReplicatedKey, Vec<u8>>;
 
 /// Handler for peer-to-peer requests
 ///
@@ -50,14 +72,19 @@ impl P2PHandler {
         -> ::Result<()>
     {
         let key = storage_get.key;
+        let replication_index = storage_get.replication_index;
+
+        let replicated_key = ReplicatedKey::new(key, replication_index);
 
         // 1. check if given key falls into range
-        if self.responsible_for(&key.get_identifier())? {
+        if self.responsible_for(&replicated_key.get_identifier())? {
             // TODO the critical region is way too large
             let storage = self.lock_storage()?;
 
             // 2. find value for given key
-            let msg = if let Some(value) = storage.get(&key).map(Vec::clone) {
+            let value_opt = storage.get(&replicated_key).map(Vec::clone);
+
+            let msg = if let Some(value) = value_opt {
                 Message::StorageGetSuccess(StorageGetSuccess { key, value })
             } else {
                 Message::StorageFailure(StorageFailure { key })
@@ -74,19 +101,21 @@ impl P2PHandler {
         -> ::Result<()>
     {
         let key = storage_put.key;
+        let replication_index = storage_put.replication_index;
+
+        let replicated_key = ReplicatedKey::new(key, replication_index);
 
         // 1. check if given key falls into range
-        if self.responsible_for(&key.get_identifier())? {
+        if self.responsible_for(&replicated_key.get_identifier())? {
             // TODO the critical region is way too large
             let mut storage = self.lock_storage()?;
 
             // 2. save value for given key
-            let msg = if storage.contains_key(&key) {
+            let msg = if storage.contains_key(&replicated_key) {
                 Message::StorageFailure(StorageFailure { key })
             } else {
-                storage.insert(key, storage_put.value);
-                let value_hash = [0; 32];
-                Message::StoragePutSuccess(StoragePutSuccess { key, value_hash })
+                storage.insert(replicated_key, storage_put.value);
+                Message::StoragePutSuccess(StoragePutSuccess { key })
             };
 
             // 3. reply with STORAGE PUT SUCCESS or STORAGE FAILURE
