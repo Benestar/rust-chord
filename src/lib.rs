@@ -78,7 +78,7 @@ pub mod storage;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
 
-pub fn run(config: Config) -> Result<()> {
+pub fn run(config: &Config) -> Result<()> {
     println!("Distributed Hash Table based on CHORD");
     println!("-------------------------------------\n");
     println!("{:#?}\n", &config);

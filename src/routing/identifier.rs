@@ -20,7 +20,7 @@ use std::fmt::{self, Debug};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 
 /// A 256 bit identifier on an identifier circle
-#[derive(PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct Identifier(U256);
 
 impl Identifier {

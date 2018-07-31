@@ -48,7 +48,7 @@ impl ApiHandler {
         }
     }
 
-    fn handle_error(&self, error: Box<Error>) {
+    fn handle_error(&self, error: &Error) {
         eprintln!("Error in ApiHandler: {}", error)
     }
 }
@@ -56,11 +56,11 @@ impl ApiHandler {
 impl ServerHandler for ApiHandler {
     fn handle_connection(&self, connection: Connection) {
         if let Err(err) = self.handle_connection(connection) {
-            self.handle_error(err);
+            self.handle_error(&*err);
         }
     }
 
     fn handle_error(&self, error: io::Error) {
-        self.handle_error(Box::new(error))
+        self.handle_error(&error)
     }
 }

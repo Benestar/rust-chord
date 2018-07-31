@@ -45,7 +45,9 @@ impl P2PHandler {
         Ok(routing.responsible_for(identifier))
     }
 
-    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
+    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet)
+        -> ::Result<()>
+    {
         let key = storage_get.key;
 
         // 1. check if given key falls into range
@@ -70,7 +72,9 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut) -> ::Result<()> {
+    fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut)
+        -> ::Result<()>
+    {
         let key = storage_put.key;
 
         // 1. check if given key falls into range
@@ -96,16 +100,18 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> ::Result<()> {
+    fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind)
+        -> ::Result<()>
+    {
         let routing = self.lock_routing()?;
 
         let identifier = peer_find.identifier;
 
         // 1. check if given key falls into range
         let socket_addr = if routing.responsible_for(&identifier) {
-            routing.get_current().clone()
+            *routing.get_current()
         } else {
-            routing.get_successor().clone()
+            *routing.get_successor()
         };
 
         // TODO use the finger table to find a node closer to the requested identifier
@@ -117,21 +123,21 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_predecessor_get(&self, mut con: Connection, predecessor_get: PredecessorGet)
+    fn handle_predecessor_get(&self, mut con: Connection, _: PredecessorGet)
         -> ::Result<()>
     {
         let routing = self.lock_routing()?;
 
-        let pred = routing.get_predecessor();
+        let socket_addr = *routing.get_predecessor();
 
         // 1. return the current predecessor with PREDECESSOR REPLY
-        let predecessor_reply = PredecessorReply { socket_addr: pred.clone() };
+        let predecessor_reply = PredecessorReply { socket_addr };
         con.send(&Message::PredecessorReply(predecessor_reply))?;
 
         Ok(())
     }
 
-    fn handle_predecessor_set(&self, mut con: Connection, predecessor_set: PredecessorSet)
+    fn handle_predecessor_set(&self, con: Connection, _: PredecessorSet)
         -> ::Result<()>
     {
         let mut routing = self.lock_routing()?;
@@ -168,7 +174,7 @@ impl P2PHandler {
         }
     }
 
-    fn handle_error(&self, error: Box<Error>) {
+    fn handle_error(&self, error: &Error) {
         eprintln!("Error in P2PHandler: {}", error)
     }
 }
@@ -176,11 +182,11 @@ impl P2PHandler {
 impl ServerHandler for P2PHandler {
     fn handle_connection(&self, connection: Connection) {
         if let Err(err) = self.handle_connection(connection) {
-            self.handle_error(err);
+            self.handle_error(&*err);
         }
     }
 
     fn handle_error(&self, error: io::Error) {
-        self.handle_error(Box::new(error))
+        self.handle_error(&error)
     }
 }

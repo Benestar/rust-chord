@@ -21,7 +21,7 @@ fn main() {
         process::exit(2);
     });
 
-    if let Err(e) = dht::run(config) {
+    if let Err(e) = dht::run(&config) {
         println!("Application error: {}", e);
         process::exit(1);
     }
