@@ -9,30 +9,9 @@ use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
+use storage::Key;
 
-#[derive(Eq, PartialEq, Hash)]
-pub struct ReplicatedKey {
-    key: [u8; 32],
-    replication_index: u8,
-}
-
-impl ReplicatedKey {
-    pub fn new(key: [u8; 32], replication_index: u8) -> Self {
-        Self { key, replication_index }
-    }
-}
-
-impl Identify for ReplicatedKey {
-    fn get_identifier(&self) -> Identifier {
-        let mut bytes = [0; 33];
-        bytes[..32].copy_from_slice(&self.key);
-        bytes[32] = self.replication_index;
-
-        bytes.get_identifier()
-    }
-}
-
-type Storage = HashMap<ReplicatedKey, Vec<u8>>;
+type Storage = HashMap<Key, Vec<u8>>;
 
 /// Handler for peer-to-peer requests
 ///
@@ -74,7 +53,7 @@ impl P2PHandler {
         let key = storage_get.key;
         let replication_index = storage_get.replication_index;
 
-        let replicated_key = ReplicatedKey::new(key, replication_index);
+        let replicated_key = Key::new(key, replication_index);
 
         // 1. check if given key falls into range
         if self.responsible_for(&replicated_key.get_identifier())? {
@@ -103,7 +82,7 @@ impl P2PHandler {
         let key = storage_put.key;
         let replication_index = storage_put.replication_index;
 
-        let replicated_key = ReplicatedKey::new(key, replication_index);
+        let replicated_key = Key::new(key, replication_index);
 
         // 1. check if given key falls into range
         if self.responsible_for(&replicated_key.get_identifier())? {
