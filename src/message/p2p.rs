@@ -14,6 +14,7 @@ use super::MessagePayload;
 /// [`StorageGetSuccess`]: struct.StorageGetSuccess.html
 #[derive(Debug, PartialEq)]
 pub struct StorageGet {
+    pub replication_index: u8,
     pub key: [u8; 32]
 }
 
@@ -106,13 +107,27 @@ pub struct PredecessorSet;
 
 impl MessagePayload for StorageGet {
     fn parse(reader: &mut Read) -> io::Result<Self> {
+        let replication_index = reader.read_u8()?;
+
+        // Skip reserved fields
+        reader.read_u8()?;
+        reader.read_u8()?;
+        reader.read_u8()?;
+
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
-        Ok(StorageGet { key })
+        Ok(StorageGet { replication_index, key })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+        writer.write_u8(self.replication_index)?;
+
+        // Fill reserved fields
+        writer.write_u8(0)?;
+        writer.write_u8(0)?;
+        writer.write_u8(0)?;
+
         writer.write_all(&self.key)?;
 
         Ok(())
@@ -139,7 +154,10 @@ impl MessagePayload for StoragePut {
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication_index)?;
+
+        // Fill reserved field
         writer.write_u8(0)?;
+
         writer.write_all(&self.key)?;
         writer.write_all(&self.value)?;
 

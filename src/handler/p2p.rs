@@ -10,8 +10,8 @@ use std::io;
 use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
 
-#[derive(Hash)]
-struct ReplicatedKey {
+#[derive(Eq, PartialEq, Hash)]
+pub struct ReplicatedKey {
     key: [u8; 32],
     replication_index: u8,
 }
