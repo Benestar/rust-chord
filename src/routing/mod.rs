@@ -16,7 +16,12 @@
 //! [`Identifier`]: identifier/struct.Identifier.html
 //! [`Routing`]: struct.Routing.html
 
+use error::MessageError;
+use message::p2p::PeerFind;
+use message::Message;
+use network::Connection;
 use self::identifier::*;
+use std::net::SocketAddr;
 
 pub mod identifier;
 
@@ -87,9 +92,40 @@ impl<T: Identify> Routing<T> {
 
         if zeros >= self.finger_table.len() {
             self.successor.get_value()
-        }
-        else {
+        } else {
             self.finger_table[zeros].get_value()
+        }
+    }
+}
+
+
+impl Routing<SocketAddr> {
+    /// Get the socket address of the peer responsible for a given identifier.
+    fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
+        if self.responsible_for(&identifier) {
+            return Ok(*self.get_current());
+        }
+
+        let mut current_addr = *self.closest_peer(&identifier);
+
+        loop {
+            // TODO don't hardcode timeout, put this in setting / config file.
+            let mut con = Connection::open(current_addr, 3600)?;
+            let peer_find = PeerFind { identifier };
+            con.send(&Message::PeerFind(peer_find))?;
+            let msg = con.receive()?;
+
+            let reply_addr = if let Message::PeerFound(peer_found) = msg {
+                peer_found.socket_addr
+            } else {
+                return Err(Box::new(MessageError::new(msg)));
+            };
+
+            if reply_addr == current_addr {
+                return Ok(reply_addr);
+            }
+
+            current_addr = reply_addr;
         }
     }
 }
