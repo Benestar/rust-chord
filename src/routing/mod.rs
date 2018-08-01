@@ -101,7 +101,7 @@ impl<T: Identify> Routing<T> {
 
 impl Routing<SocketAddr> {
     /// Get the socket address of the peer responsible for a given identifier.
-    fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
+    pub fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
         if self.responsible_for(&identifier) {
             return Ok(*self.get_current());
         }
