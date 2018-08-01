@@ -16,12 +16,7 @@
 //! [`Identifier`]: identifier/struct.Identifier.html
 //! [`Routing`]: struct.Routing.html
 
-use error::MessageError;
-use message::p2p::PeerFind;
-use message::Message;
-use network::Connection;
 use self::identifier::*;
-use std::net::SocketAddr;
 
 pub mod identifier;
 
@@ -38,12 +33,14 @@ pub struct Routing<T> {
 
 impl<T: Identify> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
-    pub fn new(current: T, predecessor: T, successor: T, fingers: usize) -> Self {
-        Routing {
+    pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>)
+        -> Self
+    {
+        Self {
             current: IdentifierValue::new(current),
             predecessor: IdentifierValue::new(predecessor),
             successor: IdentifierValue::new(successor),
-            finger_table: Vec::with_capacity(fingers)
+            finger_table: finger_table.into_iter().map(IdentifierValue::new).collect()
         }
     }
 
@@ -87,45 +84,13 @@ impl<T: Identify> Routing<T> {
 
     /// Returns the peer closest to the given identifier.
     pub fn closest_peer(&self, identifier: &Identifier) -> &T {
-        let diff = identifier.offset(self.current.get_identifier());
+        let diff = *identifier - *self.current.get_identifier();
         let zeros = diff.leading_zeros() as usize;
 
         if zeros >= self.finger_table.len() {
             self.successor.get_value()
         } else {
             self.finger_table[zeros].get_value()
-        }
-    }
-}
-
-
-impl Routing<SocketAddr> {
-    /// Get the socket address of the peer responsible for a given identifier.
-    pub fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
-        if self.responsible_for(&identifier) {
-            return Ok(*self.get_current());
-        }
-
-        let mut current_addr = *self.closest_peer(&identifier);
-
-        loop {
-            // TODO don't hardcode timeout, put this in setting / config file.
-            let mut con = Connection::open(current_addr, 3600)?;
-            let peer_find = PeerFind { identifier };
-            con.send(&Message::PeerFind(peer_find))?;
-            let msg = con.receive()?;
-
-            let reply_addr = if let Message::PeerFound(peer_found) = msg {
-                peer_found.socket_addr
-            } else {
-                return Err(Box::new(MessageError::new(msg)));
-            };
-
-            if reply_addr == current_addr {
-                return Ok(reply_addr);
-            }
-
-            current_addr = reply_addr;
         }
     }
 }

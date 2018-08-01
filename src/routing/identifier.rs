@@ -18,6 +18,7 @@ use bigint::U256;
 use ring::digest;
 use std::fmt::{self, Debug};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
+use std::ops::{Add, Sub};
 use storage::Key;
 
 /// A 256 bit identifier on an identifier circle
@@ -35,6 +36,15 @@ impl Identifier {
     /// Panics if the slice does not contain exactly 32 elements.
     pub fn new(identifier: &[u8]) -> Self {
         Identifier(U256::from_big_endian(identifier))
+    }
+
+    /// Create a new identifier with the given bit set.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `index` exceeds the bit width of the number.
+    pub fn with_bit(index: usize) -> Self {
+        Identifier(U256::one() << index)
     }
 
     fn generate(bytes: &[u8]) -> Self {
@@ -63,26 +73,6 @@ impl Identifier {
         let (diff2, _) = second.0.overflowing_sub(first.0);
 
         diff1 < diff2
-    }
-
-    /// Calculate the distance to the given offset in positive direction.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use dht::routing::identifier::Identifier;
-    /// #
-    /// let id1 = Identifier::new(&[5; 32]);
-    /// let id2 = Identifier::new(&[1; 32]);
-    ///
-    /// let offset = Identifier::new(&[4; 32]);
-    ///
-    /// assert_eq!(offset, id1.offset(&id2));
-    /// ```
-    pub fn offset(&self, base: &Identifier) -> Identifier {
-        let (diff, _) = self.0.overflowing_sub(base.0);
-
-        Identifier(diff)
     }
 
     /// Returns the binary logarithm of this identifier minus the given offset.
@@ -120,6 +110,28 @@ impl Identifier {
         let mut bytes = [0; 32];
         self.0.to_big_endian(&mut bytes);
         bytes
+    }
+}
+
+/// Implement overflowing addition for identifiers
+impl Add for Identifier {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let (sum, _) = self.0.overflowing_add(other.0);
+
+        Identifier(sum)
+    }
+}
+
+/// Implement overflowing subtraction for identifiers
+impl Sub for Identifier {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        let (diff, _) = self.0.overflowing_sub(other.0);
+
+        Identifier(diff)
     }
 }
 
