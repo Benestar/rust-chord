@@ -76,6 +76,7 @@ pub mod network;
 pub mod routing;
 pub mod storage;
 pub mod routines;
+pub mod stabilization;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
 
