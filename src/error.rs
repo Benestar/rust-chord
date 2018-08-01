@@ -19,8 +19,7 @@ use std::fmt;
 /// [`io::Error`]: ../std/io/struct.Error.html
 #[derive(Debug)]
 pub struct MessageError {
-    msg: Message,
-    error: Box<Error + Send + Sync>
+    msg: Message
 }
 
 impl MessageError {
@@ -37,25 +36,23 @@ impl MessageError {
     /// let result = if let Message::DhtSuccess(_) = msg {
     ///     Ok("yay")
     /// } else {
-    ///     Err(MessageError::new(msg, "unexpected message type"))
+    ///     Err(MessageError::new(msg))
     /// };
     /// ```
-    pub fn new<E>(msg: Message, error: E) -> Self
-        where E: Into<Box<Error + Send + Sync>>
-    {
-        MessageError { msg, error: error.into() }
+    pub fn new(msg: Message) -> Self {
+        MessageError { msg }
     }
 }
 
 impl fmt::Display for MessageError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Message error ({})\n\n{:?}", self.error, self.msg)
+        write!(f, "Unexpected message type {}", self.msg)
     }
 }
 
 impl Error for MessageError {
     fn description(&self) -> &str {
-        "Message error"
+        "Unexpected message type"
     }
 
     fn cause(&self) -> Option<&Error> {

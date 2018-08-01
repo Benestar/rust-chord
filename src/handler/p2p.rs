@@ -174,7 +174,7 @@ impl P2PHandler {
             Message::PredecessorSet(predecessor_set) =>
                 self.handle_predecessor_set(con, predecessor_set),
             _ =>
-                Err(Box::new(MessageError::new(msg, "unexpected message type")))
+                Err(Box::new(MessageError::new(msg)))
         }
     }
 
