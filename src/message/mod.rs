@@ -10,6 +10,7 @@
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use self::api::*;
 use self::p2p::*;
+use std::fmt;
 use std::io;
 use std::io::prelude::*;
 
@@ -213,6 +214,29 @@ impl Message {
         writer.write_u16::<NetworkEndian>(size as u16)?;
 
         Ok(size as usize)
+    }
+}
+
+impl fmt::Display for Message {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let name = match self {
+            Message::DhtPut(_) => "DHT PUT",
+            Message::DhtGet(_) => "DHT GET",
+            Message::DhtSuccess(_) => "DHT SUCCESS",
+            Message::DhtFailure(_) => "DHT FAILURE",
+            Message::StorageGet(_) => "STORAGE GET",
+            Message::StoragePut(_) => "STORAGE PUT",
+            Message::StorageGetSuccess(_) => "STORAGE GET SUCCESS",
+            Message::StoragePutSuccess(_) => "STORAGE PUT SUCCESS",
+            Message::StorageFailure(_) => "STORAGE FAILURE",
+            Message::PeerFind(_) => "PEER FIND",
+            Message::PeerFound(_) => "PEER FOUND",
+            Message::PredecessorGet(_) => "PREDECESSOR GET",
+            Message::PredecessorReply(_) => "PREDECESSOR REPLY",
+            Message::PredecessorSet(_) => "PREDECESSOR SET",
+        };
+
+        name.fmt(f)
     }
 }
 

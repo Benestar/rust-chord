@@ -44,7 +44,7 @@ impl ApiHandler {
             Message::DhtPut(dht_put) =>
                 self.handle_dht_put(con, dht_put),
             _ =>
-                Err(Box::new(MessageError::new(msg, "unexpected message type")))
+                Err(Box::new(MessageError::new(msg)))
         }
     }
 

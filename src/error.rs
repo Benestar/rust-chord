@@ -56,6 +56,6 @@ impl Error for MessageError {
     }
 
     fn cause(&self) -> Option<&Error> {
-        Some(self.error.as_ref())
+        None
     }
 }
