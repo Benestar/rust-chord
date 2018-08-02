@@ -37,11 +37,11 @@ fn main() {
     loop {
         let command = read_line("Enter a command").unwrap();
 
-        if "put" == &command {
+        if "put" == command {
             handle_put(config);
         }
 
-        if "get" == &command {
+        if "get" == command {
             handle_get(config);
         }
     }
@@ -54,7 +54,7 @@ fn read_line(question: &str) -> Option<String> {
     let mut line = String::new();
 
     match io::stdin().read_line(&mut line) {
-        Ok(_) => Some(line),
+        Ok(_) => Some(line.trim().to_string()),
         Err(err) => {
             eprintln!("Error: {}", err);
             None
