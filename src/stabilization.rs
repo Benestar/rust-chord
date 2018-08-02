@@ -54,6 +54,8 @@ impl Stabilization {
         let update_successor = self.update_successor(&mut routing);
         let update_fingers = self.update_fingers(&mut routing);
 
+        debug!("Current routing information:\n\n{:#?}", *routing);
+
         update_successor.and(update_fingers)
     }
 

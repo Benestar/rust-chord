@@ -183,6 +183,7 @@ impl Identify for Key {
 }
 
 /// Container for a value and its identifier
+#[derive(Debug)]
 pub struct IdentifierValue<T> {
     value: T,
     identifier: Identifier

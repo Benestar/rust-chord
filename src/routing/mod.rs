@@ -21,6 +21,7 @@ use self::identifier::*;
 pub mod identifier;
 
 /// This struct stores routing information about other peers.
+#[derive(Debug)]
 pub struct Routing<T> {
     pub current: IdentifierValue<T>,
     // TODO should maybe be an Option
