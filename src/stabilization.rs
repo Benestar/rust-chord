@@ -74,7 +74,6 @@ impl Stabilization {
         if new_successor != current_successor {
             info!("Updating successor to address {}", new_successor);
 
-            self.procedures.set_predecessor(new_successor)?;
             routing.set_successor(new_successor);
         }
 
