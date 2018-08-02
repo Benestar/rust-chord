@@ -5,6 +5,7 @@ extern crate structopt;
 use dht::config::Config;
 use dht::message::api::{DhtGet, DhtPut};
 use std::io;
+use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process;
 use structopt::StructOpt;
@@ -33,7 +34,6 @@ fn main() {
     println!("Client to talk to the DHT api");
     println!("-----------------------------\n");
 
-
     loop {
         let command = read_line("Enter a command").unwrap();
 
@@ -49,6 +49,7 @@ fn main() {
 
 fn read_line(question: &str) -> Option<String> {
     print!("{}: ", question);
+    io::stdout().flush().unwrap();
 
     let mut line = String::new();
 

@@ -227,6 +227,8 @@ impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
     {
         let listener = TcpListener::bind(addr)?;
 
+        trace!("Server listening on address {}", listener.local_addr()?);
+
         let handle = thread::spawn(move || {
             let pool = ThreadPool::new(num_workers);
 
