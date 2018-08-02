@@ -24,7 +24,7 @@ impl Procedures {
     pub fn find_peer(&self, identifier: Identifier, mut peer_addr: SocketAddr)
          -> ::Result<SocketAddr>
     {
-        debug!("Finding peer for identifier {:?}", identifier);
+        debug!("Finding peer for identifier {}", identifier);
 
         // TODO do not fail if one peer does not reply correctly
         loop {
@@ -40,6 +40,8 @@ impl Procedures {
             };
 
             if reply_addr == peer_addr {
+                debug!("Peer found for identifier {} with address {}", identifier, reply_addr);
+
                 return Ok(reply_addr);
             }
 

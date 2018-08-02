@@ -44,7 +44,7 @@ fn main() {
     stderrlog::new()
         .module(module_path!())
         .quiet(opt.quiet)
-        .verbosity(opt.verbose + 1)
+        .verbosity(opt.verbose)
         .timestamp(opt.timestamp.unwrap_or(stderrlog::Timestamp::Off))
         .init()
         .unwrap();

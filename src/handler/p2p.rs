@@ -46,9 +46,7 @@ impl P2PHandler {
         Ok(routing.responsible_for(identifier))
     }
 
-    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet)
-        -> ::Result<()>
-    {
+    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
         let raw_key = storage_get.raw_key;
         let replication_index = storage_get.replication_index;
 
@@ -81,9 +79,7 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut)
-        -> ::Result<()>
-    {
+    fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut) -> ::Result<()> {
         let raw_key = storage_put.raw_key;
         let replication_index = storage_put.replication_index;
 
@@ -116,9 +112,7 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind)
-        -> ::Result<()>
-    {
+    fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> ::Result<()> {
         let routing = self.lock_routing()?;
 
         let identifier = peer_find.identifier;
@@ -141,9 +135,7 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_predecessor_get(&self, mut con: Connection, _: PredecessorGet)
-        -> ::Result<()>
-    {
+    fn handle_predecessor_get(&self, mut con: Connection, _: PredecessorGet) -> ::Result<()> {
         let routing = self.lock_routing()?;
 
         info!("Received PREDECESSOR GET request");
@@ -159,9 +151,7 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_predecessor_set(&self, con: Connection, _: PredecessorSet)
-        -> ::Result<()>
-    {
+    fn handle_predecessor_set(&self, con: Connection, _: PredecessorSet) -> ::Result<()> {
         let mut routing = self.lock_routing()?;
 
         info!("Received PREDECESSOR SET request");

@@ -47,25 +47,31 @@ impl Stabilization {
     }
 
     pub fn stabilize(&mut self) -> ::Result<()> {
-        let update_successor = self.update_successor();
-        let update_fingers = self.update_fingers();
+        let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
+
+        info!("Stabilizing routing information");
+
+        let update_successor = self.update_successor(&mut routing);
+        let update_fingers = self.update_fingers(&mut routing);
 
         update_successor.and(update_fingers)
     }
 
-    fn update_successor(&mut self) -> ::Result<()> {
-        let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
-
+    fn update_successor(&self, routing: &mut Routing<SocketAddr>) -> ::Result<()> {
         if *routing.successor == *routing.current {
             // avoid deadlock when requesting own predecessor
             return Ok(())
         }
 
-        let current_id = routing.current.identifier();
-        let successor_id = routing.successor.identifier();
-        let new_successor = self.procedures.get_predecessor(*routing.successor)?;
+        let current_successor = *routing.successor;
 
-        if new_successor.identifier().is_between(&current_id, &successor_id) {
+        info!("Obtaining new successor from current successor with address {}", current_successor);
+
+        let new_successor = self.procedures.get_predecessor(current_successor)?;
+
+        if new_successor != current_successor {
+            info!("Updating successor to address {}", new_successor);
+
             self.procedures.set_predecessor(new_successor)?;
             routing.set_successor(new_successor);
         }
@@ -73,9 +79,7 @@ impl Stabilization {
         Ok(())
     }
 
-    fn update_fingers(&mut self) -> ::Result<()> {
-        let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
-
+    fn update_fingers(&self, routing: &mut Routing<SocketAddr>) -> ::Result<()> {
         if *routing.successor == *routing.current {
             // avoid deadlock when requesting own predecessor
             return Ok(())
@@ -83,6 +87,9 @@ impl Stabilization {
 
         let current_id = routing.current.identifier();
         let successor = *routing.successor;
+
+        info!("Iterating through fingers to get current addresses using successor with address {}",
+              successor);
 
         for (i, finger) in routing.finger_table.iter_mut().enumerate() {
             // TODO do not hardcode for 256 bits here
