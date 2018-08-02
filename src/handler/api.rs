@@ -101,7 +101,7 @@ impl ApiHandler {
     }
 
     fn handle_error(&self, error: &Error) {
-        eprintln!("Error in ApiHandler: {}", error)
+        warn!("Error in ApiHandler: {}", error)
     }
 }
 

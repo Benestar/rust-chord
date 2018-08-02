@@ -61,17 +61,19 @@
 extern crate bigint;
 extern crate byteorder;
 extern crate ini;
+#[macro_use]
+extern crate log;
 extern crate ring;
 extern crate threadpool;
 
 use config::Config;
 use handler::P2PHandler;
+use network::Server;
 use routing::Routing;
 use stabilization::{Bootstrap, Stabilization};
 use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
-use network::Server;
 use std::thread;
 use std::time::Duration;
 
@@ -88,17 +90,17 @@ pub mod stabilization;
 type Result<T> = std::result::Result<T, Box<Error>>;
 
 pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
-    println!("Distributed Hash Table based on CHORD");
-    println!("-------------------------------------\n");
-    println!("{:#?}\n", &config);
+    info!("Distributed Hash Table based on CHORD");
+    info!("-------------------------------------\n");
+    info!("{:#?}\n", &config);
 
     let routing = if let Some(bootstrap_address) = bootstrap {
-        println!("Connection to bootstrap peer {}", bootstrap_address);
+        info!("Connection to bootstrap peer {}", bootstrap_address);
 
         let bootstrap = Bootstrap::new(config.listen_address, bootstrap_address, config.fingers);
         bootstrap.bootstrap(config.timeout)?
     } else {
-        println!("No bootstrapping peer provided, creating new network");
+        info!("No bootstrapping peer provided, creating new network");
 
         Routing::new(config.listen_address, config.listen_address, config.listen_address, vec![config.listen_address; config.fingers])
     };
@@ -114,7 +116,7 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     thread::spawn(move || {
         loop {
             if let Err(err) = stabilization.stabilize() {
-                eprintln!("Error during stabilization:\n\n{:?}", err);
+                error!("Error during stabilization:\n\n{:?}", err);
             }
 
             thread::sleep(Duration::from_secs(config.stabilization_interval));
@@ -122,7 +124,7 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     });
 
     if let Err(err) = p2p_handle.join() {
-        eprintln!("Error joining p2p handler:\n\n{:?}", err);
+        error!("Error joining p2p handler:\n\n{:?}", err);
     }
 
     Ok(())

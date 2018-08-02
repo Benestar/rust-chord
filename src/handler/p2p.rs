@@ -178,7 +178,7 @@ impl P2PHandler {
     }
 
     fn handle_error(&self, error: &Error) {
-        eprintln!("Error in P2PHandler: {}", error)
+        warn!("Error in P2PHandler: {}", error)
     }
 }
 

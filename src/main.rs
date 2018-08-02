@@ -1,5 +1,8 @@
 extern crate dht;
 #[macro_use]
+extern crate log;
+extern crate stderrlog;
+#[macro_use]
 extern crate structopt;
 
 use dht::config::Config;
@@ -22,23 +25,39 @@ struct Opt {
     #[structopt(short = "b")]
     bootstrap: Option<SocketAddr>,
 
+    /// Silence all output
+    #[structopt(short = "q", long = "quiet")]
+    quiet: bool,
+
     /// Level of verbosity
     #[structopt(short = "v", parse(from_occurrences))]
-    verbose: u8,
+    verbose: usize,
+
+    /// Timestamp (sec, ms, ns, none)
+    #[structopt(short = "t")]
+    timestamp: Option<stderrlog::Timestamp>,
 }
 
 fn main() {
     let opt = Opt::from_args();
 
+    stderrlog::new()
+        .module(module_path!())
+        .quiet(opt.quiet)
+        .verbosity(opt.verbose)
+        .timestamp(opt.timestamp.unwrap_or(stderrlog::Timestamp::Off))
+        .init()
+        .unwrap();
+
     let config = Config::load_from_file(opt.config).unwrap_or_else(|err| {
-        println!("Argument error: {}", err);
+        error!("Argument error: {}", err);
         process::exit(2);
     });
 
     // TODO init logger with verbosity flag
 
     if let Err(e) = dht::run(config, opt.bootstrap) {
-        println!("Application error: {}", e);
+        error!("Application error: {}", e);
         process::exit(1);
     }
 }
