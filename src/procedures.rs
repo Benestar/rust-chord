@@ -1,4 +1,4 @@
-//! A collection of routines used in various places.
+//! A collection of procedures used in various places.
 
 use error::MessageError;
 use message::Message;
@@ -7,11 +7,11 @@ use network::Connection;
 use routing::identifier::Identifier;
 use std::net::SocketAddr;
 
-pub struct Routines {
+pub struct Procedures {
     timeout: u64
 }
 
-impl Routines {
+impl Procedures {
     pub fn new(timeout: u64) -> Self {
         Self { timeout }
     }
