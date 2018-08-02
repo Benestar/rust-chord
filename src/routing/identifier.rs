@@ -20,6 +20,7 @@ use std::fmt::{self, Debug};
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ops::{Add, Sub};
 use storage::Key;
+use std::ops::Deref;
 
 /// A 256 bit identifier on an identifier circle
 #[derive(Copy, Clone, PartialEq)]
@@ -144,36 +145,36 @@ impl Debug for Identifier {
 /// Trait to obtain an identifier from a data structure
 pub trait Identify {
     /// Generates an identifier for this object.
-    fn get_identifier(&self) -> Identifier;
+    fn identifier(&self) -> Identifier;
 }
 
 /// Obtains an identifier by hashing the four octets of the ip address.
 impl Identify for SocketAddrV4 {
-    fn get_identifier(&self) -> Identifier {
+    fn identifier(&self) -> Identifier {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
 /// Obtains an identifier by hashing the first 16 octets of the ip address.
 impl Identify for SocketAddrV6 {
-    fn get_identifier(&self) -> Identifier {
+    fn identifier(&self) -> Identifier {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
 /// Get the identifier for a V4 or V6 socket address.
 impl Identify for SocketAddr {
-    fn get_identifier(&self) -> Identifier {
+    fn identifier(&self) -> Identifier {
         match self {
-            SocketAddr::V4(v4) => v4.get_identifier(),
-            SocketAddr::V6(v6) => v6.get_identifier()
+            SocketAddr::V4(v4) => v4.identifier(),
+            SocketAddr::V6(v6) => v6.identifier()
         }
     }
 }
 
 /// Hashes the raw key and its replication index.
 impl Identify for Key {
-    fn get_identifier(&self) -> Identifier {
+    fn identifier(&self) -> Identifier {
         let mut bytes = [0; 33];
         bytes[..32].copy_from_slice(&self.raw_key);
         bytes[32] = self.replication_index;
@@ -191,24 +192,9 @@ impl<T: Identify> IdentifierValue<T> {
     /// Obtains the identifier for the given `value` and stores it along with
     /// the value in an `IdentifierValue` object.
     pub fn new(value: T) -> Self {
-        let identifier = value.get_identifier();
+        let identifier = value.identifier();
 
         Self { value, identifier }
-    }
-
-    /// Returns the value in this struct.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use dht::routing::identifier::IdentifierValue;
-    /// #
-    /// let idv = IdentifierValue::new([4; 32]);
-    ///
-    /// assert_eq!([4; 32], *idv.get_value());
-    /// ```
-    pub fn get_value(&self) -> &T {
-        &self.value
     }
 
     /// Returns the identifier obtained during the creation of this object.
@@ -220,9 +206,17 @@ impl<T: Identify> IdentifierValue<T> {
     /// #
     /// let idv = IdentifierValue::new([4; 32]);
     ///
-    /// assert_eq!([4; 32].get_identifier(), *idv.get_identifier());
+    /// assert_eq!([4; 32].get_identifier(), idv.get_identifier());
     /// ```
-    pub fn get_identifier(&self) -> &Identifier {
-        &self.identifier
+    pub fn identifier(&self) -> Identifier {
+        self.identifier
+    }
+}
+
+impl<T> Deref for IdentifierValue<T> {
+    type Target = T;
+
+    fn deref(&self) -> &<Self as Deref>::Target {
+        &self.value
     }
 }

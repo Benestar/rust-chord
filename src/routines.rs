@@ -57,7 +57,7 @@ impl Bootstrap {
     }
 
     fn get_successor(&self) -> ::Result<SocketAddr> {
-        find_peer(self.own_addr.get_identifier(), self.peer_addr)
+        find_peer(self.own_addr.identifier(), self.peer_addr)
     }
 
     fn get_predecessor(&self, successor: SocketAddr) -> ::Result<SocketAddr> {
@@ -75,7 +75,7 @@ impl Bootstrap {
     }
 
     fn get_finger_table(&self, successor: SocketAddr) -> ::Result<Vec<SocketAddr>> {
-        let own_identifier = self.own_addr.get_identifier();
+        let own_identifier = self.own_addr.identifier();
 
         let mut finger_table = Vec::with_capacity(self.fingers);
 

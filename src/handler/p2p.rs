@@ -42,7 +42,7 @@ impl P2PHandler {
             .or(Err("Could not lock mutex for storage"))
     }
 
-    fn responsible_for(&self, identifier: &Identifier) -> Result<bool, &str> {
+    fn responsible_for(&self, identifier: Identifier) -> Result<bool, &str> {
         let routing = self.lock_routing()?;
         Ok(routing.responsible_for(identifier))
     }
@@ -56,7 +56,7 @@ impl P2PHandler {
         let key = Key { raw_key, replication_index };
 
         // 1. check if given key falls into range
-        if self.responsible_for(&key.get_identifier())? {
+        if self.responsible_for(key.identifier())? {
             // TODO the critical region is way too large
             let storage = self.lock_storage()?;
 
@@ -85,7 +85,7 @@ impl P2PHandler {
         let key = Key { raw_key, replication_index };
 
         // 1. check if given key falls into range
-        if self.responsible_for(&key.get_identifier())? {
+        if self.responsible_for(key.identifier())? {
             // TODO the critical region is way too large
             let mut storage = self.lock_storage()?;
 
@@ -112,10 +112,10 @@ impl P2PHandler {
         let identifier = peer_find.identifier;
 
         // 1. check if given key falls into range
-        let socket_addr = if routing.responsible_for(&identifier) {
-            *routing.get_current()
+        let socket_addr = if routing.responsible_for(identifier) {
+            *routing.current
         } else {
-            *routing.get_successor()
+            *routing.successor
         };
 
         // TODO use the finger table to find a node closer to the requested identifier
@@ -132,7 +132,7 @@ impl P2PHandler {
     {
         let routing = self.lock_routing()?;
 
-        let socket_addr = *routing.get_predecessor();
+        let socket_addr = *routing.predecessor;
 
         // 1. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
@@ -149,7 +149,7 @@ impl P2PHandler {
         let peer_addr = con.peer_addr()?;
 
         // 1. check if the predecessor is closer than the previous predecessor
-        if routing.responsible_for(&peer_addr.get_identifier()) {
+        if routing.responsible_for(peer_addr.identifier()) {
             // 2. update the predecessor if necessary
             routing.set_predecessor(peer_addr)
         }
