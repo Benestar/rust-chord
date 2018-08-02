@@ -35,26 +35,27 @@ impl ApiHandler {
             .or(Err("Could not lock mutex for routing"))
     }
 
-    fn get_closest_peer(&self, identifier: Identifier) -> Result<SocketAddr, &str> {
+    fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
         let routing = self.lock_routing()?;
-        Ok(**routing.closest_peer(identifier))
+
+        let closest_peer = **routing.closest_peer(identifier);
+
+        if closest_peer == *routing.current {
+            // avoid deadlock when requesting own predecessor
+            return Ok(*routing.current)
+        }
+
+        self.procedures.find_peer(identifier, closest_peer)
     }
 
-    fn handle_dht_get(&self, mut api_con: Connection, dht_get: DhtGet)
-        -> ::Result<()>
-    {
-        // find peer for id obtained from key
-        let mut replicated_key = Key { raw_key: dht_get.key, replication_index: 0 };
-
+    fn handle_dht_get(&self, mut api_con: Connection, dht_get: DhtGet) -> ::Result<()> {
         // iterate through all replication indices
         for i in 0..u8::MAX {
-            replicated_key.replication_index = i;
+            let key = Key { raw_key: dht_get.key, replication_index: i };
 
-            let identifier = replicated_key.identifier();
-            let closest_peer = self.get_closest_peer(identifier)?;
-            let target_sock_addr = self.procedures.find_peer(identifier, closest_peer)?;
+            let peer_addr = self.find_peer(key.identifier())?;
 
-            if let Some(value) = self.procedures.get_value(target_sock_addr, replicated_key)? {
+            if let Some(value) = self.procedures.get_value(peer_addr, key)? {
                 let dht_success = DhtSuccess { key: dht_get.key, value };
                 api_con.send(&Message::DhtSuccess(dht_success))?;
 
@@ -69,18 +70,14 @@ impl ApiHandler {
         Ok(())
     }
 
-    fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut)
-        -> ::Result<()>
-    {
-        let target_replication = dht_put.replication;
-
-        for i in 1..target_replication {
+    fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut) -> ::Result<()> {
+        // iterate through all replication indices
+        for i in 0..dht_put.replication + 1 {
             let key = Key { raw_key: dht_put.key, replication_index: i };
-            let identifier = key.identifier();
-            let closest_peer = self.get_closest_peer(identifier)?;
-            let target_sock_addr = self.procedures.find_peer(identifier, closest_peer)?;
 
-            self.procedures.put_value(target_sock_addr, key, dht_put.ttl, dht_put.value.clone())?;
+            let peer_addr = self.find_peer(key.identifier())?;
+
+            self.procedures.put_value(peer_addr, key, dht_put.ttl, dht_put.value.clone())?;
         }
 
         Ok(())

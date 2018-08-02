@@ -102,7 +102,8 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     } else {
         info!("No bootstrapping peer provided, creating new network");
 
-        Routing::new(config.listen_address, config.listen_address, config.listen_address, vec![config.listen_address; config.fingers])
+        let finger_table = vec![config.listen_address; config.fingers];
+        Routing::new(config.listen_address, config.listen_address, config.listen_address, finger_table)
     };
 
     let routing = Arc::new(Mutex::new(routing));

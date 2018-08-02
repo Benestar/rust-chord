@@ -56,6 +56,11 @@ impl Stabilization {
     fn update_successor(&mut self) -> ::Result<()> {
         let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
 
+        if *routing.successor == *routing.current {
+            // avoid deadlock when requesting own predecessor
+            return Ok(())
+        }
+
         let current_id = routing.current.identifier();
         let successor_id = routing.successor.identifier();
         let new_successor = self.procedures.get_predecessor(*routing.successor)?;
@@ -70,6 +75,11 @@ impl Stabilization {
 
     fn update_fingers(&mut self) -> ::Result<()> {
         let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
+
+        if *routing.successor == *routing.current {
+            // avoid deadlock when requesting own predecessor
+            return Ok(())
+        }
 
         let current_id = routing.current.identifier();
         let successor = *routing.successor;
