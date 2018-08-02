@@ -59,6 +59,8 @@ impl Connection {
         // TODO add connection timeout
         let stream = TcpStream::connect(addr)?;
 
+        trace!("Connection to {} - Opened", stream.peer_addr()?);
+
         let timeout = Duration::from_millis(timeout_ms);
         stream.set_read_timeout(Some (timeout))?;
         stream.set_write_timeout(Some (timeout))?;
@@ -80,7 +82,12 @@ impl Connection {
         let size = self.stream.read(self.buffer.as_mut())?;
 
         // create cursor to parse message
-        Message::parse(Cursor::new(&self.buffer[..size]))
+        let msg = Message::parse(Cursor::new(&self.buffer[..size]))?;
+
+        // output debug information
+        trace!("Connection to {} - Received message of type {}", self.stream.peer_addr()?, msg);
+
+        Ok(msg)
     }
 
     /// Sends a message to the remote peer.
@@ -89,6 +96,9 @@ impl Connection {
     pub fn send(&mut self, msg: &Message) -> io::Result<()> {
         // create cursor to write message
         let size = msg.write_to(Cursor::new(self.buffer.as_mut()))?;
+
+        // output debug information
+        trace!("Connection to {} - Sent message of type {}", self.stream.peer_addr()?, msg);
 
         // write bytes to tcp stream
         self.stream.write_all(&self.buffer[..size])
@@ -158,8 +168,11 @@ pub trait ServerHandler {
     fn handle_incoming(&self, result: io::Result<TcpStream>) {
         match result {
             Ok (stream) => {
+                trace!("Handling incoming connection from {}", stream.peer_addr().unwrap());
+
                 // TODO handle timeouts
                 let connection = Connection::from_stream(stream);
+
                 self.handle_connection(connection)
             },
             Err (error) => self.handle_error(error)

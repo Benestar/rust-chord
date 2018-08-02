@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["bene"]
 
 [dependencies]
-bigint = "4.4.0"
+bigint = { version = "4.4.0", features = ["std"] }
 byteorder = "1.2.3"
 log = "0.4.3"
 ring = "0.12.1"

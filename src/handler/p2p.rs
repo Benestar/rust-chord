@@ -54,6 +54,8 @@ impl P2PHandler {
 
         let key = Key { raw_key, replication_index };
 
+        info!("Received STORAGE GET request for key {}", key);
+
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier())? {
             // TODO the critical region is way too large
@@ -63,8 +65,12 @@ impl P2PHandler {
             let value_opt = storage.get(&key).map(Vec::clone);
 
             let msg = if let Some(value) = value_opt {
+                info!("Found value for key {} and replying with STORAGE GET SUCCESS", key);
+
                 Message::StorageGetSuccess(StorageGetSuccess { raw_key, value })
             } else {
+                info!("Did not find value for key {} and replying with STORAGE FAILURE", key);
+
                 Message::StorageFailure(StorageFailure { raw_key })
             };
 
@@ -83,6 +89,8 @@ impl P2PHandler {
 
         let key = Key { raw_key, replication_index };
 
+        info!("Received STORAGE PUT request for key {}", key);
+
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier())? {
             // TODO the critical region is way too large
@@ -90,9 +98,14 @@ impl P2PHandler {
 
             // 2. save value for given key
             let msg = if storage.contains_key(&key) {
+                info!("Value for key {} already exists, thus replying with STORAGE FAILURE", key);
+
                 Message::StorageFailure(StorageFailure { raw_key })
             } else {
                 storage.insert(key, storage_put.value);
+
+                info!("Stored value for key {} and replying with STORAGE PUT SUCCESS", key);
+
                 Message::StoragePutSuccess(StoragePutSuccess { raw_key })
             };
 
@@ -110,14 +123,16 @@ impl P2PHandler {
 
         let identifier = peer_find.identifier;
 
+        info!("Received PEER FIND request for identifier {}", identifier);
+
         // 1. check if given key falls into range
         let socket_addr = if routing.responsible_for(identifier) {
             *routing.current
         } else {
-            *routing.successor
+            **routing.closest_peer(identifier)
         };
 
-        // TODO use the finger table to find a node closer to the requested identifier
+        info!("Replying with PEER FOUND with address {}", socket_addr);
 
         // 2. reply with PEER FOUND either with this node or the best next node
         let peer_found = PeerFound { identifier, socket_addr };
@@ -131,7 +146,11 @@ impl P2PHandler {
     {
         let routing = self.lock_routing()?;
 
+        info!("Received PREDECESSOR GET request");
+
         let socket_addr = *routing.predecessor;
+
+        info!("Replying with PREDECESSOR REPLY and address {}", socket_addr);
 
         // 1. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
@@ -145,12 +164,16 @@ impl P2PHandler {
     {
         let mut routing = self.lock_routing()?;
 
+        info!("Received PREDECESSOR SET request");
+
         let peer_addr = con.peer_addr()?;
 
         // 1. check if the predecessor is closer than the previous predecessor
         if routing.responsible_for(peer_addr.identifier()) {
             // 2. update the predecessor if necessary
-            routing.set_predecessor(peer_addr)
+            routing.set_predecessor(peer_addr);
+
+            info!("Updated predecessor to new address {}", peer_addr);
         }
 
         // TODO maybe check whether predecessor is actually still reachable?
@@ -160,6 +183,8 @@ impl P2PHandler {
 
     fn handle_connection(&self, mut con: Connection) -> ::Result<()> {
         let msg = con.receive()?;
+
+        info!("P2P handler received message of type {}", msg);
 
         match msg {
             Message::StorageGet(storage_get) =>
@@ -178,7 +203,7 @@ impl P2PHandler {
     }
 
     fn handle_error(&self, error: &Error) {
-        warn!("Error in P2PHandler: {}", error)
+        error!("Error in P2PHandler: {}", error)
     }
 }
 

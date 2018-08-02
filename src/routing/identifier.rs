@@ -16,14 +16,14 @@
 
 use bigint::U256;
 use ring::digest;
-use std::fmt::{self, Debug};
+use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ops::{Add, Sub};
-use storage::Key;
 use std::ops::Deref;
+use storage::Key;
 
 /// A 256 bit identifier on an identifier circle
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Identifier(U256);
 
 impl Identifier {
@@ -136,9 +136,9 @@ impl Sub for Identifier {
     }
 }
 
-impl Debug for Identifier {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        (self.0).0.fmt(f)
+impl fmt::Display for Identifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "‹{}›", self.0)
     }
 }
 

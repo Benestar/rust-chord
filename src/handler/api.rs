@@ -52,10 +52,9 @@ impl ApiHandler {
 
             let identifier = replicated_key.identifier();
             let closest_peer = self.get_closest_peer(identifier)?;
-            let target_sock_addr =
-                self.procedures.find_peer(identifier, closest_peer)?;
+            let target_sock_addr = self.procedures.find_peer(identifier, closest_peer)?;
 
-            if let Some(value) = self.procedures.get_value(target_sock_addr, i, dht_get.key)? {
+            if let Some(value) = self.procedures.get_value(target_sock_addr, replicated_key)? {
                 let dht_success = DhtSuccess { key: dht_get.key, value };
                 api_con.send(&Message::DhtSuccess(dht_success))?;
 
@@ -81,7 +80,7 @@ impl ApiHandler {
             let closest_peer = self.get_closest_peer(identifier)?;
             let target_sock_addr = self.procedures.find_peer(identifier, closest_peer)?;
 
-            self.procedures.put_value(target_sock_addr, i, dht_put.ttl, dht_put.key, dht_put.value.clone())?;
+            self.procedures.put_value(target_sock_addr, key, dht_put.ttl, dht_put.value.clone())?;
         }
 
         Ok(())
@@ -89,6 +88,8 @@ impl ApiHandler {
 
     fn handle_connection(&self, mut con: Connection) -> ::Result<()> {
         let msg = con.receive()?;
+
+        info!("Api handler received message of type {}", msg);
 
         match msg {
             Message::DhtGet(dht_get) =>
@@ -101,7 +102,7 @@ impl ApiHandler {
     }
 
     fn handle_error(&self, error: &Error) {
-        warn!("Error in ApiHandler: {}", error)
+        error!("Error in ApiHandler: {}", error)
     }
 }
 
