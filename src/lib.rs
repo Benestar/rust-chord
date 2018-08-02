@@ -67,7 +67,7 @@ extern crate ring;
 extern crate threadpool;
 
 use config::Config;
-use handler::P2PHandler;
+use handler::{ApiHandler, P2PHandler};
 use network::Server;
 use routing::Routing;
 use stabilization::{Bootstrap, Stabilization};
@@ -108,13 +108,16 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
 
     let routing = Arc::new(Mutex::new(routing));
 
-    let mut stabilization = Stabilization::new(Arc::clone(&routing), config.timeout);
-
     let p2p_handler = P2PHandler::new(Arc::clone(&routing));
     let p2p_server = Server::new(p2p_handler);
     let p2p_handle = p2p_server.listen(config.listen_address, config.worker_threads)?;
 
-    thread::spawn(move || {
+    let api_handler = ApiHandler::new(Arc::clone(&routing), config.timeout);
+    let api_server = Server::new(api_handler);
+    let api_handle = api_server.listen(config.api_address, 1)?;
+
+    let mut stabilization = Stabilization::new(Arc::clone(&routing), config.timeout);
+    let stabilization_handle = thread::spawn(move || {
         loop {
             if let Err(err) = stabilization.stabilize() {
                 error!("Error during stabilization:\n\n{:?}", err);
@@ -126,6 +129,14 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
 
     if let Err(err) = p2p_handle.join() {
         error!("Error joining p2p handler:\n\n{:?}", err);
+    }
+
+    if let Err(err) = api_handle.join() {
+        error!("Error joining api handler:\n\n{:?}", err);
+    }
+
+    if let Err(err) = stabilization_handle.join() {
+        error!("Error joining stabilization:\n\n{:?}", err);
     }
 
     Ok(())

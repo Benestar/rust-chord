@@ -11,22 +11,22 @@ use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
 use std::u8;
 use storage::Key;
+use std::sync::Arc;
 
 /// Handler for api requests
 ///
 /// The supported incoming api messages are `DHT GET` and `DHT PUT`.
 pub struct ApiHandler {
-    routing: Mutex<Routing<SocketAddr>>,
+    routing: Arc<Mutex<Routing<SocketAddr>>>,
     procedures: Procedures
 }
 
 impl ApiHandler {
     /// Creates a new `ApiHandler` instance.
-    pub fn new(routing: Routing<SocketAddr>, timeout: u64) -> Self {
-        Self {
-            routing: Mutex::new(routing),
-            procedures: Procedures::new(timeout)
-        }
+    pub fn new(routing: Arc<Mutex<Routing<SocketAddr>>>, timeout: u64) -> Self {
+        let procedures = Procedures::new(timeout);
+
+        Self { routing, procedures }
     }
 
     /// Acquire the lock
