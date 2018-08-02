@@ -66,8 +66,10 @@ fn handle_put(config: Config) {
     let key = read_line("Enter a key").unwrap();
     let value = read_line("Enter a value").unwrap();
 
+    let len = std::cmp::min(32, key.len());
+
     let mut raw_key = [0; 32];
-    raw_key.copy_from_slice(&key.as_bytes()[..32]);
+    raw_key[..len].copy_from_slice(&key.as_bytes()[..len]);
 
     let dht_put = DhtPut {
         ttl: 10,
@@ -85,8 +87,10 @@ fn handle_put(config: Config) {
 fn handle_get(config: Config) {
     let key = read_line("Enter a key").unwrap();
 
+    let len = std::cmp::min(32, key.len());
+
     let mut raw_key = [0; 32];
-    raw_key.copy_from_slice(&key.as_bytes()[..32]);
+    raw_key[..len].copy_from_slice(&key.as_bytes()[..len]);
 
     let dht_get = DhtGet {
         key: raw_key,
