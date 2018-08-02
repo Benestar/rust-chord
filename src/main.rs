@@ -29,7 +29,7 @@ struct Opt {
     #[structopt(short = "q", long = "quiet")]
     quiet: bool,
 
-    /// Level of verbosity
+    /// Level of verbosity (v, vv, vvv)
     #[structopt(short = "v", parse(from_occurrences))]
     verbose: usize,
 
@@ -44,7 +44,7 @@ fn main() {
     stderrlog::new()
         .module(module_path!())
         .quiet(opt.quiet)
-        .verbosity(opt.verbose)
+        .verbosity(opt.verbose + 1)
         .timestamp(opt.timestamp.unwrap_or(stderrlog::Timestamp::Off))
         .init()
         .unwrap();
