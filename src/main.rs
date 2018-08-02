@@ -37,7 +37,7 @@ fn main() {
 
     // TODO init logger with verbosity flag
 
-    if let Err(e) = dht::run(&config, opt.bootstrap) {
+    if let Err(e) = dht::run(config, opt.bootstrap) {
         println!("Application error: {}", e);
         process::exit(1);
     }

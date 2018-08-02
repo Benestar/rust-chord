@@ -183,16 +183,16 @@ pub trait ServerHandler {
 /// #
 /// # let handler = TestHandler;
 /// #
-/// let server = Server::new(Box::new(handler));
+/// let server = Server::new(handler);
 ///
 /// server.listen("127.0.0.1:8080", 4)
 ///     .expect("could not bind to port");
 /// ```
-pub struct Server {
-    handler: Arc<Box<ServerHandler + Send + Sync>>
+pub struct Server<T> {
+    handler: Arc<T>
 }
 
-impl Server {
+impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
     /// Creates a new server for the given handler.
     ///
     /// The [`ServerHandler`] must also implement [`Send`] and [`Sync`] to
@@ -201,7 +201,7 @@ impl Server {
     /// [`ServerHandler`]: trait.ServerHandler.html
     /// [`Send`]: ../../std/marker/trait.Send.html
     /// [`Sync`]: ../../std/marker/trait.Sync.html
-    pub fn new(handler: Box<ServerHandler + Send + Sync>) -> Self {
+    pub fn new(handler: T) -> Self {
         Self { handler: Arc::new(handler) }
     }
 

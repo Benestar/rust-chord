@@ -2,10 +2,14 @@ use ini::Ini;
 use std::net::SocketAddr;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Config {
     pub listen_address: SocketAddr,
     pub api_address: SocketAddr,
+    pub worker_threads: usize,
+    pub timeout: u64,
+    pub fingers: usize,
+    pub stabilization_interval: u64,
 }
 
 impl Config {
@@ -23,6 +27,22 @@ impl Config {
             .ok_or("missing value `api_address`")?
             .parse()?;
 
-        Ok(Config { listen_address, api_address })
+        let worker_threads = dht.get("worker_threads")
+            .unwrap_or(&"4".to_string())
+            .parse()?;
+
+        let timeout = dht.get("timeout")
+            .unwrap_or(&"300000".to_string())
+            .parse()?;
+
+        let fingers = dht.get("fingers")
+            .unwrap_or(&"128".to_string())
+            .parse()?;
+
+        let stabilization_interval = dht.get("stabilization_interval")
+            .unwrap_or(&"60".to_string())
+            .parse()?;
+
+        Ok(Config { listen_address, api_address, worker_threads, timeout, fingers, stabilization_interval })
     }
 }

@@ -10,6 +10,7 @@ use std::io;
 use std::net::SocketAddr;
 use std::sync::{Mutex, MutexGuard};
 use storage::Key;
+use std::sync::Arc;
 
 type Storage = HashMap<Key, Vec<u8>>;
 
@@ -18,18 +19,16 @@ type Storage = HashMap<Key, Vec<u8>>;
 /// The supported incoming peer-to-peer messages are `STORAGE GET`,
 /// `STORAGE PUT`, `PEER FIND`, `PREDECESSOR GET` and `PREDECESSOR SET`.
 pub struct P2PHandler {
-    routing: Mutex<Routing<SocketAddr>>,
+    routing: Arc<Mutex<Routing<SocketAddr>>>,
     storage: Mutex<Storage>
 }
 
 impl P2PHandler {
     /// Creates a new `P2PHandler` instance.
-    pub fn new(routing: Routing<SocketAddr>, storage: Storage) -> Self {
-        // TODO request mutexes right away
-        Self {
-            routing: Mutex::new(routing),
-            storage: Mutex::new(storage)
-        }
+    pub fn new(routing: Arc<Mutex<Routing<SocketAddr>>>) -> Self {
+        let storage = Mutex::new(Storage::new());
+
+        Self { routing, storage }
     }
 
     fn lock_routing(&self) -> Result<MutexGuard<Routing<SocketAddr>>, &str> {
