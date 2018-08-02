@@ -46,6 +46,23 @@ impl P2PHandler {
         Ok(routing.responsible_for(identifier))
     }
 
+    fn get_from_storage(&self, key: Key) -> ::Result<Option<Vec<u8>>> {
+        let storage = self.lock_storage()?;
+        Ok(storage.get(&key).map(Vec::clone))
+    }
+
+    fn put_to_storage(&self, key: Key, value: Vec<u8>) -> ::Result<bool> {
+        let mut storage = self.lock_storage()?;
+
+        if storage.contains_key(&key) {
+            return Ok(false)
+        }
+
+        storage.insert(key, value);
+
+        Ok(true)
+    }
+
     fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
         let raw_key = storage_get.raw_key;
         let replication_index = storage_get.replication_index;
@@ -56,11 +73,8 @@ impl P2PHandler {
 
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier())? {
-            // TODO the critical region is way too large
-            let storage = self.lock_storage()?;
-
             // 2. find value for given key
-            let value_opt = storage.get(&key).map(Vec::clone);
+            let value_opt = self.get_from_storage(key)?;
 
             let msg = if let Some(value) = value_opt {
                 info!("Found value for key {} and replying with STORAGE GET SUCCESS", key);
@@ -89,20 +103,15 @@ impl P2PHandler {
 
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier())? {
-            // TODO the critical region is way too large
-            let mut storage = self.lock_storage()?;
-
             // 2. save value for given key
-            let msg = if storage.contains_key(&key) {
-                info!("Value for key {} already exists, thus replying with STORAGE FAILURE", key);
-
-                Message::StorageFailure(StorageFailure { raw_key })
-            } else {
-                storage.insert(key, storage_put.value);
-
+            let msg = if self.put_to_storage(key, storage_put.value)? {
                 info!("Stored value for key {} and replying with STORAGE PUT SUCCESS", key);
 
                 Message::StoragePutSuccess(StoragePutSuccess { raw_key })
+            } else {
+                info!("Value for key {} already exists, thus replying with STORAGE FAILURE", key);
+
+                Message::StorageFailure(StorageFailure { raw_key })
             };
 
             // 3. reply with STORAGE PUT SUCCESS or STORAGE FAILURE
