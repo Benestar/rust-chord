@@ -114,6 +114,10 @@ impl Procedures {
         Err(Box::new(MessageError::new(msg)))
     }
 
+    /// Notify the successor of a potential predecessor and asks to reply with the current predecessor.
+    ///
+    /// Opens a P2P connection and sends a PREDECESSOR NOTIFY message to `peer_addr` to receive a
+    /// reply with the socket addres of `socket_addr`.
     pub fn notify_predecessor(&self, socket_addr: SocketAddr, peer_addr: SocketAddr) -> ::Result<SocketAddr> {
         debug!("Getting predecessor of peer {}", peer_addr);
 
