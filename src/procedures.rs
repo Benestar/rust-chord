@@ -49,6 +49,10 @@ impl Procedures {
         }
     }
 
+    /// Send a storage get message to a peer with the objective to find a value for a given key.
+    ///
+    /// Opens a P2P connection to `peer_addr` and sends a STORAGE GET message to retrieve a value for
+    /// `key` depending on the reply.
     pub fn get_value(&self, peer_addr: SocketAddr, key: Key)
         -> ::Result<Option<Vec<u8>>>
     {
@@ -75,6 +79,9 @@ impl Procedures {
         }
     }
 
+    /// Put a value for a given key into the distributed hash table.
+    ///
+    /// Opens a P2P connection to `peer_addr` and sends a STORAGE PUT message to store `value` under `key`.
     pub fn put_value(&self, peer_addr: SocketAddr, key: Key, ttl: u16, value: Vec<u8>)
         -> ::Result<()>
     {
