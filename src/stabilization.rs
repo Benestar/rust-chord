@@ -70,7 +70,10 @@ impl Stabilization {
 
         let new_successor = self.procedures.get_predecessor(current_successor)?;
 
-        if new_successor != current_successor {
+        let current_id = routing.current.identifier();
+        let successor_id = routing.successor.identifier();
+
+        if new_successor.identifier().is_between(&current_id, &successor_id) {
             info!("Updating successor to address {}", new_successor);
 
             routing.set_successor(new_successor);
