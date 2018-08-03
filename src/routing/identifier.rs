@@ -56,6 +56,10 @@ impl Identifier {
     /// Returns whether this identifier is between `first` and `second` on the
     /// identifier circle.
     ///
+    /// The first identifier is excluded from the range while the second one is included.
+    /// This method can be written as `self ∈ (first, second]` if `first ≤ second` and as
+    /// `self ∈ [0, first) ∪ [second, 0]` if `first > second`.
+    ///
     /// # Examples
     ///
     /// ```
@@ -219,10 +223,13 @@ impl<T: Identify> IdentifierValue<T> {
     ///
     /// ```
     /// # use dht::routing::identifier::{IdentifierValue, Identify};
+    /// # use std::net::SocketAddr;
     /// #
-    /// let idv = IdentifierValue::new([4; 32]);
+    /// let value: SocketAddr = "127.0.0.1:8080".parse().unwrap();
     ///
-    /// assert_eq!([4; 32].get_identifier(), idv.get_identifier());
+    /// let idv = IdentifierValue::new(value);
+    ///
+    /// assert_eq!(value.identifier(), idv.identifier());
     /// ```
     pub fn identifier(&self) -> Identifier {
         self.identifier
@@ -234,5 +241,112 @@ impl<T> Deref for IdentifierValue<T> {
 
     fn deref(&self) -> &<Self as Deref>::Target {
         &self.value
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn identifier_with_bit() {
+        let bytes = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ];
+
+        let expected = Identifier::new(&bytes);
+
+        assert_eq!(expected, Identifier::with_bit(128));
+    }
+
+    #[test]
+    fn is_between() {
+        let id1 = Identifier::new(&[1; 32]);
+        let id2 = Identifier::new(&[2; 32]);
+        let id3 = Identifier::new(&[3; 32]);
+
+        assert!(id1.is_between(&id3, &id2));
+        assert!(!id1.is_between(&id2, &id3));
+
+        assert!(id2.is_between(&id1, &id3));
+        assert!(!id2.is_between(&id3, &id1));
+
+        assert!(id3.is_between(&id2, &id1));
+        assert!(!id3.is_between(&id1, &id2));
+    }
+
+    #[test]
+    fn is_between_edges() {
+        let id1 = Identifier::new(&[1; 32]);
+        let id2 = Identifier::new(&[2; 32]);
+
+        // the right id is included while the left one is excluded
+        assert!(id1.is_between(&id2, &id1));
+        assert!(!id1.is_between(&id1, &id2));
+
+        // there is nothing between an id and itself
+        assert!(!id2.is_between(&id1, &id1));
+        assert!(!id1.is_between(&id1, &id1));
+    }
+
+    #[test]
+    fn leading_zeros() {
+        let identifier = Identifier::new(&[
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+        ]);
+
+        assert_eq!(133, identifier.leading_zeros());
+    }
+
+    #[test]
+    fn leading_zeros_min() {
+        let identifier = Identifier::new(&[0; 32]);
+
+        assert_eq!(256, identifier.leading_zeros());
+    }
+
+    #[test]
+    fn leading_zeros_max() {
+        let identifier = Identifier::new(&[0xff; 32]);
+
+        assert_eq!(0, identifier.leading_zeros());
+    }
+
+    #[test]
+    fn identifier_add() {
+        let id1 = Identifier::new(&[1; 32]);
+        let id2 = Identifier::new(&[2; 32]);
+        let id3 = Identifier::new(&[3; 32]);
+
+        assert_eq!(id3, id1 + id2);
+    }
+
+    #[test]
+    fn identifier_add_overflow() {
+        let id1 = Identifier::new(&[0xff; 32]);
+        let id2 = Identifier::with_bit(0);
+        let id3 = Identifier::new(&[0; 32]);
+
+        assert_eq!(id3, id1 + id2);
+    }
+
+    #[test]
+    fn identifier_sub() {
+        let id1 = Identifier::new(&[1; 32]);
+        let id2 = Identifier::new(&[2; 32]);
+        let id3 = Identifier::new(&[3; 32]);
+
+        assert_eq!(id1, id3 - id2);
+    }
+
+    #[test]
+    fn identifier_sub_overflow() {
+        let id1 = Identifier::new(&[0xff; 32]);
+        let id2 = Identifier::with_bit(0);
+        let id3 = Identifier::new(&[0; 32]);
+
+        assert_eq!(id1, id3 - id2);
     }
 }

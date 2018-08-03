@@ -328,12 +328,15 @@ mod tests {
     #[test]
     fn storage_get() {
         let buf = [
+            // replication index and reserved
+            4, 0, 0, 0,
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         ];
 
         let msg = StorageGet {
+            replication_index: 4,
             raw_key: [3; 32],
         };
 
