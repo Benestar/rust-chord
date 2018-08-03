@@ -157,6 +157,16 @@ impl P2PHandler {
             // TODO give data to new predecessor!!!
         }
 
+        if *routing.predecessor == *routing.current {
+            // if predecessor points to ourselves, update it to this peer.
+            routing.set_predecessor(peer_addr);
+        }
+
+        if *routing.successor == *routing.current {
+            // If successor points to ourselves, update it to this peer.
+            routing.set_successor(peer_addr);
+        }
+
         // 3. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
         con.send(&Message::PredecessorReply(predecessor_reply))?;
