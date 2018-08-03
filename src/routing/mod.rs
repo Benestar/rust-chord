@@ -29,7 +29,7 @@ pub struct Routing<T> {
     // TODO use BinaryHeap for multiple successors
     pub successor: IdentifierValue<T>,
     // TODO
-    pub finger_table: Vec<IdentifierValue<T>>
+    finger_table: Vec<IdentifierValue<T>>
 }
 
 impl<T: Identify + Copy + Clone> Routing<T> {
@@ -60,6 +60,16 @@ impl<T: Identify + Copy + Clone> Routing<T> {
         for i in diff.leading_zeros() as usize..self.finger_table.len() {
             self.finger_table[i] = self.successor;
         }
+    }
+
+    /// Sets the finger for the given index.
+    pub fn set_finger(&mut self, index: usize, finger: T) {
+        self.finger_table[index] = IdentifierValue::new(finger);
+    }
+
+    /// Returns the number of fingers.
+    pub fn fingers(&self) -> usize {
+        self.finger_table.len()
     }
 
     /// Checks whether this peer is responsible for the given identifier.

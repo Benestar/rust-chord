@@ -46,58 +46,58 @@ impl Stabilization {
     }
 
     pub fn stabilize(&mut self) -> ::Result<()> {
-        let mut routing = self.routing.lock().or(Err("Lock is poisoned"))?;
-
         info!("Stabilizing routing information");
 
-        let update_successor = self.update_successor(&mut routing);
-        let update_fingers = self.update_fingers(&mut routing);
+        let update_successor = self.update_successor();
+        let update_fingers = self.update_fingers();
+
+        let routing = self.routing.lock().unwrap();
 
         debug!("Current routing information:\n\n{:#?}", *routing);
 
         update_successor.and(update_fingers)
     }
 
-    fn update_successor(&self, routing: &mut Routing<SocketAddr>) -> ::Result<()> {
-        if *routing.successor == *routing.current {
-            // avoid deadlock when requesting own predecessor
-            return Ok(())
-        }
+    fn update_successor(&self) -> ::Result<()> {
+        let (current, successor) = {
+            let routing = self.routing.lock().unwrap();
 
-        info!("Obtaining new successor from current successor with address {}", *routing.successor);
+            (routing.current, routing.successor)
+        };
 
-        let new_successor = self.procedures.notify_predecessor(*routing.current, *routing.successor)?;
+        info!("Obtaining new successor from current successor with address {}", *successor);
 
-        let current_id = routing.current.identifier();
-        let successor_id = routing.successor.identifier();
+        let new_successor = self.procedures.notify_predecessor(*current, *successor)?;
+
+        let current_id = current.identifier();
+        let successor_id = successor.identifier();
 
         if new_successor.identifier().is_between(&current_id, &successor_id) {
             info!("Updating successor to address {}", new_successor);
 
+            let mut routing = self.routing.lock().unwrap();
             routing.set_successor(new_successor);
         }
 
         Ok(())
     }
 
-    fn update_fingers(&self, routing: &mut Routing<SocketAddr>) -> ::Result<()> {
-        if *routing.successor == *routing.current {
-            // avoid deadlock when requesting own predecessor
-            return Ok(())
-        }
+    fn update_fingers(&self) -> ::Result<()> {
+        let (current, successor, fingers) = {
+            let routing = self.routing.lock().unwrap();
 
-        let current_id = routing.current.identifier();
-        let successor = *routing.successor;
+            (routing.current, routing.successor, routing.fingers())
+        };
 
-        info!("Iterating through fingers to get current addresses using successor with address {}",
-              successor);
+        info!("Update fingers using successor with address {}", *successor);
 
-        for (i, finger) in routing.finger_table.iter_mut().enumerate() {
+        for i in 0..fingers {
             // TODO do not hardcode for 256 bits here
-            let identifier = current_id + Identifier::with_bit(255 - i);
-            let peer = self.procedures.find_peer(identifier, successor)?;
+            let identifier = current.identifier() + Identifier::with_bit(255 - i);
+            let peer = self.procedures.find_peer(identifier, *successor)?;
 
-            *finger = IdentifierValue::new(peer);
+            let mut routing = self.routing.lock().unwrap();
+            routing.set_finger(i, peer);
         }
 
         Ok(())

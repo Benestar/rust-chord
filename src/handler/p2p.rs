@@ -37,6 +37,45 @@ impl P2PHandler {
         routing.responsible_for(identifier)
     }
 
+    fn closest_peer(&self, identifier: Identifier) -> SocketAddr {
+        let routing = self.routing.lock().unwrap();
+
+        **routing.closest_peer(identifier)
+    }
+
+    fn notify_predecessor(&self, predecessor_addr: SocketAddr) -> SocketAddr {
+        let mut routing = self.routing.lock().unwrap();
+
+        let old_predecessor_addr = *routing.predecessor;
+
+        // 1. check if the predecessor is closer than the previous predecessor
+        if routing.responsible_for(predecessor_addr.identifier()) {
+            // 2. update the predecessor if necessary
+            routing.set_predecessor(predecessor_addr);
+
+            info!("Updated predecessor to new address {}", predecessor_addr);
+
+            // TODO maybe check whether old predecessor is actually still reachable?
+            // TODO give data to new predecessor!!!
+        }
+
+        if *routing.predecessor == *routing.current {
+            // if predecessor points to ourselves, update it to this peer.
+            routing.set_predecessor(predecessor_addr);
+
+            info!("Updated predecessor to new address {}", predecessor_addr);
+        }
+
+        if *routing.successor == *routing.current {
+            // If successor points to ourselves, update it to this peer.
+            routing.set_successor(predecessor_addr);
+
+            info!("Updated successor to new address {}", predecessor_addr);
+        }
+
+        old_predecessor_addr
+    }
+
     fn get_from_storage(&self, key: Key) -> Option<Vec<u8>> {
         let storage = self.storage.lock().unwrap();
 
@@ -114,14 +153,12 @@ impl P2PHandler {
     }
 
     fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> ::Result<()> {
-        let routing = self.routing.lock().unwrap();
-
         let identifier = peer_find.identifier;
 
         info!("Received PEER FIND request for identifier {}", identifier);
 
         // 1. check if given key falls into range
-        let socket_addr = **routing.closest_peer(identifier);
+        let socket_addr = self.closest_peer(identifier);
 
         info!("Replying with PEER FOUND with address {}", socket_addr);
 
@@ -132,39 +169,14 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_predecessor_get(&self, mut con: Connection, predecessor_notify: PredecessorNotify) -> ::Result<()> {
-        let mut routing = self.routing.lock().unwrap();
+    fn handle_predecessor_notify(&self, mut con: Connection, predecessor_notify: PredecessorNotify) -> ::Result<()> {
+        let predecessor_addr = predecessor_notify.socket_addr;
 
-        info!("Received PREDECESSOR GET request");
+        info!("Received PREDECESSOR GET request from {}", predecessor_addr);
 
-        let socket_addr = *routing.predecessor;
+        let socket_addr = self.notify_predecessor(predecessor_addr);
 
         info!("Replying with PREDECESSOR REPLY and address {}", socket_addr);
-
-        // 1. check if the predecessor is closer than the previous predecessor
-        if routing.responsible_for(predecessor_notify.socket_addr.identifier()) {
-            // 2. update the predecessor if necessary
-            routing.set_predecessor(predecessor_notify.socket_addr);
-
-            info!("Updated predecessor to new address {}", predecessor_notify.socket_addr);
-
-            // TODO maybe check whether old predecessor is actually still reachable?
-            // TODO give data to new predecessor!!!
-        }
-
-        if *routing.predecessor == *routing.current {
-            // if predecessor points to ourselves, update it to this peer.
-            routing.set_predecessor(predecessor_notify.socket_addr);
-
-            info!("Updated predecessor to new address {}", predecessor_notify.socket_addr);
-        }
-
-        if *routing.successor == *routing.current {
-            // If successor points to ourselves, update it to this peer.
-            routing.set_successor(predecessor_notify.socket_addr);
-
-            info!("Updated successor to new address {}", predecessor_notify.socket_addr);
-        }
 
         // 3. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
@@ -186,7 +198,7 @@ impl P2PHandler {
             Message::PeerFind(peer_find) =>
                 self.handle_peer_find(con, peer_find),
             Message::PredecessorNotify(predecessor_get) =>
-                self.handle_predecessor_get(con, predecessor_get),
+                self.handle_predecessor_notify(con, predecessor_get),
             _ =>
                 Err(Box::new(MessageError::new(msg)))
         }
