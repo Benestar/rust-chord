@@ -32,7 +32,7 @@ pub struct Routing<T> {
     pub finger_table: Vec<IdentifierValue<T>>
 }
 
-impl<T: Identify> Routing<T> {
+impl<T: Identify + Copy + Clone> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
     pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>)
         -> Self
@@ -53,6 +53,13 @@ impl<T: Identify> Routing<T> {
     /// Sets the current successor.
     pub fn set_successor(&mut self, new_succ: T) {
         self.successor = IdentifierValue::new(new_succ);
+
+        // update finger table so that all fingers closer than successor point to successor
+        let diff = self.successor.identifier() - self.current.identifier();
+
+        for i in diff.leading_zeros() as usize..self.finger_table.len() {
+            self.finger_table[i] = self.successor;
+        }
     }
 
     /// Checks whether this peer is responsible for the given identifier.
