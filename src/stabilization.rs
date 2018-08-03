@@ -1,3 +1,10 @@
+//! This module is responsible for creating and updating the finger table needed for routing.
+//!
+//! The [`Stabilization`] struct should be used in regular intervals to make sure that new peers
+//! joining the network are recognized and added to the finger table.
+//!
+//! [`Stabilization`]: struct.Stabilization.html
+
 use routing::identifier::*;
 use routing::Routing;
 use std::net::SocketAddr;
@@ -5,6 +12,7 @@ use procedures::Procedures;
 use std::sync::Mutex;
 use std::sync::Arc;
 
+/// Basic information needed to connect to the network using a bootstrap peer
 pub struct Bootstrap {
     current_addr: SocketAddr,
     boot_addr: SocketAddr,
@@ -19,6 +27,12 @@ impl Bootstrap {
         Self { current_addr, boot_addr, fingers }
     }
 
+    /// Creates a new routing table by asking the bootstrap peer for all relevant information.
+    ///
+    /// This first finds the peer which is currently responsible for our identifier range and
+    /// will become our successor. After that we obtain the current predecessor of that peer
+    /// and set it as our predecessor which also updates the predecessor information of the
+    /// scucessor peer. Finally, we initialize the finger table with our own address.
     pub fn bootstrap(&self, timeout: u64) -> ::Result<Routing<SocketAddr>> {
         let procedures = Procedures::new(timeout);
         let current_id = self.current_addr.identifier();
@@ -40,12 +54,20 @@ pub struct Stabilization {
 }
 
 impl Stabilization {
+    /// Initializes the stabilization struct with a routing object and the connection timeout.
     pub fn new(routing: Arc<Mutex<Routing<SocketAddr>>>, timeout: u64) -> Self {
         let procedures = Procedures::new(timeout);
 
         Self { procedures, routing }
     }
 
+    /// Updates the successor and finger tables
+    ///
+    /// The current successor is asked for its predecessor. If the predecessor would be a closer
+    /// successor than the field in the routing struct is updated.
+    ///
+    /// After that the finger tables are updated by iterating through each entry and finding the
+    /// peer responsible for that finger.
     pub fn stabilize(&mut self) -> ::Result<()> {
         info!("Stabilizing routing information");
 
