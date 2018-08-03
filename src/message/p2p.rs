@@ -86,9 +86,13 @@ pub struct PeerFound {
     pub socket_addr: SocketAddr
 }
 
-/// This message allows to query the predecessor of some other peer.
+/// This message allows to notify some other peer of a potentially new predecessor.
+///
+/// The receiving peer may use the given address to update its predecessor afterwards if applicable.
 #[derive(Debug, PartialEq)]
-pub struct PredecessorGet;
+pub struct PredecessorNotify {
+    pub socket_addr: SocketAddr
+}
 
 /// When a peer receives a [`PredecessorGet`] message, it is expected to reply
 /// with this message and the address of its predecessor.
@@ -98,12 +102,6 @@ pub struct PredecessorGet;
 pub struct PredecessorReply {
     pub socket_addr: SocketAddr
 }
-
-/// To tell some peer about a new predecessor, this message can be used.
-/// The receiving peer is required to check whether it actually should update
-/// its predecessor value.
-#[derive(Debug, PartialEq)]
-pub struct PredecessorSet;
 
 impl MessagePayload for StorageGet {
     fn parse(reader: &mut Read) -> io::Result<Self> {
@@ -250,7 +248,7 @@ impl MessagePayload for PeerFound {
 
         let socket_addr = SocketAddr::new(ip_address, port);
 
-        Ok(PeerFound{ identifier, socket_addr })
+        Ok(PeerFound { identifier, socket_addr })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
@@ -268,12 +266,34 @@ impl MessagePayload for PeerFound {
     }
 }
 
-impl MessagePayload for PredecessorGet {
-    fn parse(_reader: &mut Read) -> io::Result<Self> {
-        Ok(PredecessorGet)
+impl MessagePayload for PredecessorNotify {
+    fn parse(reader: &mut Read) -> io::Result<Self> {
+        let mut ip_arr = [0; 16];
+        reader.read_exact(&mut ip_arr)?;
+
+        let ipv6 = Ipv6Addr::from(ip_arr);
+
+        let ip_address = match ipv6.to_ipv4() {
+            Some(ipv4) => IpAddr::V4(ipv4),
+            None => IpAddr::V6(ipv6)
+        };
+
+        let port = reader.read_u16::<NetworkEndian>()?;
+
+        let socket_addr = SocketAddr::new(ip_address, port);
+
+        Ok(PredecessorNotify { socket_addr })
     }
 
-    fn write_to(&self, _writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+        let ip_address = match self.socket_addr.ip() {
+            IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
+            IpAddr::V6(ipv6) => ipv6
+        };
+
+        writer.write_all(&ip_address.octets())?;
+        writer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
+
         Ok(())
     }
 }
@@ -306,16 +326,6 @@ impl MessagePayload for PredecessorReply {
         writer.write_all(&ip_address.octets())?;
         writer.write_u16::<NetworkEndian>(self.socket_addr.port())?;
 
-        Ok(())
-    }
-}
-
-impl MessagePayload for PredecessorSet {
-    fn parse(_reader: &mut Read) -> io::Result<Self> {
-        Ok(PredecessorSet)
-    }
-
-    fn write_to(&self, _writer: &mut Write) -> io::Result<()> {
         Ok(())
     }
 }
@@ -469,9 +479,33 @@ mod tests {
     }
 
     #[test]
-    fn predecessor_get() {
-        let buf = [];
-        let msg = PredecessorGet;
+    fn predecessor_notify_ipv4() {
+        let buf = [
+            // 16 bytes for ip address
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 0, 0, 1,
+            // port
+            31, 144,
+        ];
+
+        let msg = PredecessorNotify {
+            socket_addr: "127.0.0.1:8080".parse().unwrap(),
+        };
+
+        test_message_payload(&buf, msg);
+    }
+
+    #[test]
+    fn predecessor_notify_ipv6() {
+        let buf = [
+            // 16 bytes for ip address
+            32, 1, 13, 184, 133, 163, 0, 0, 0, 0, 138, 35, 3, 112, 115, 52,
+            // port
+            31, 144,
+        ];
+
+        let msg = PredecessorNotify {
+            socket_addr: "[2001:db8:85a3::8a23:370:7334]:8080".parse().unwrap(),
+        };
 
         test_message_payload(&buf, msg);
     }
@@ -504,14 +538,6 @@ mod tests {
         let msg = PredecessorReply {
             socket_addr: "[2001:db8:85a3::8a23:370:7334]:8080".parse().unwrap(),
         };
-
-        test_message_payload(&buf, msg);
-    }
-
-    #[test]
-    fn predecessor_set() {
-        let buf = [];
-        let msg = PredecessorSet;
 
         test_message_payload(&buf, msg);
     }

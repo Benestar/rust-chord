@@ -31,7 +31,8 @@ impl MessageError {
     /// ```
     /// # use dht::error::MessageError;
     /// # use dht::message::{Message, p2p};
-    /// # let msg = Message::PredecessorGet(p2p::PredecessorGet);
+    /// # let socket_addr = "127.0.0.1:8080".parse().unwrap();
+    /// # let msg = Message::PredecessorNotify(p2p::PredecessorNotify { socket_addr });
     /// #
     /// let result = if let Message::DhtSuccess(_) = msg {
     ///     Ok("yay")

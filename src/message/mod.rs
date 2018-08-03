@@ -72,12 +72,11 @@ pub enum Message {
     PeerFind(PeerFind),
     /// A peer close to the given identifier has been found.
     PeerFound(PeerFound),
-    /// Query the predecessor of some other peer.
-    PredecessorGet(PredecessorGet),
+    /// Notify some peer about a potentially new predecessor while requesting
+    /// its old predecessor.
+    PredecessorNotify(PredecessorNotify),
     /// Reply to `PREDECESSOR GET` with the predecessor's address.
     PredecessorReply(PredecessorReply),
-    /// Tell some peer about a potentially new predecessor.
-    PredecessorSet(PredecessorSet)
 }
 
 impl Message {
@@ -94,9 +93,8 @@ impl Message {
 
     const PEER_FIND: u16 = 1050;
     const PEER_FOUND: u16 = 1051;
-    const PREDECESSOR_GET: u16 = 1052;
+    const PREDECESSOR_NOTIFY: u16 = 1052;
     const PREDECESSOR_REPLY: u16 = 1053;
-    const PREDECESSOR_SET: u16 = 1054;
 
     pub fn parse<T: Read>(mut reader: T) -> io::Result<Self> {
         let size = reader.read_u16::<NetworkEndian>()?;
@@ -132,12 +130,10 @@ impl Message {
                 MessagePayload::parse(reader).map(Message::PeerFind),
             Self::PEER_FOUND =>
                 MessagePayload::parse(reader).map(Message::PeerFound),
-            Self::PREDECESSOR_GET =>
-                MessagePayload::parse(reader).map(Message::PredecessorGet),
+            Self::PREDECESSOR_NOTIFY =>
+                MessagePayload::parse(reader).map(Message::PredecessorNotify),
             Self::PREDECESSOR_REPLY =>
                 MessagePayload::parse(reader).map(Message::PredecessorReply),
-            Self::PREDECESSOR_SET =>
-                MessagePayload::parse(reader).map(Message::PredecessorSet),
             _ =>
                 Err(io::Error::new(io::ErrorKind::InvalidInput,
                                    "Invalid message type"))
@@ -193,17 +189,13 @@ impl Message {
                 writer.write_u16::<NetworkEndian>(Self::PEER_FOUND)?;
                 peer_found.write_to(&mut writer)?;
             }
-            Message::PredecessorGet(predecessor_get) => {
-                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_GET)?;
+            Message::PredecessorNotify(predecessor_get) => {
+                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_NOTIFY)?;
                 predecessor_get.write_to(&mut writer)?;
             }
             Message::PredecessorReply(predecessor_reply) => {
                 writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_REPLY)?;
                 predecessor_reply.write_to(&mut writer)?;
-            }
-            Message::PredecessorSet(predecessor_set) => {
-                writer.write_u16::<NetworkEndian>(Self::PREDECESSOR_SET)?;
-                predecessor_set.write_to(&mut writer)?;
             }
         }
 
@@ -231,9 +223,8 @@ impl fmt::Display for Message {
             Message::StorageFailure(_) => "STORAGE FAILURE",
             Message::PeerFind(_) => "PEER FIND",
             Message::PeerFound(_) => "PEER FOUND",
-            Message::PredecessorGet(_) => "PREDECESSOR GET",
+            Message::PredecessorNotify(_) => "PREDECESSOR GET",
             Message::PredecessorReply(_) => "PREDECESSOR REPLY",
-            Message::PredecessorSet(_) => "PREDECESSOR SET",
         };
 
         name.fmt(f)
@@ -287,20 +278,6 @@ mod tests {
             key: [3; 32],
             value: vec![1, 2, 3, 4, 5],
         });
-
-        let parsed = Message::parse(Cursor::new(&buf[..])).unwrap();
-
-        assert_eq!(msg, parsed);
-    }
-
-    #[test]
-    fn message_parse_only_header() {
-        let buf = [
-            // header
-            0, 45, 4, 28,
-        ];
-
-        let msg = Message::PredecessorGet(PredecessorGet);
 
         let parsed = Message::parse(Cursor::new(&buf[..])).unwrap();
 

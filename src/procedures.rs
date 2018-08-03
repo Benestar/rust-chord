@@ -2,7 +2,7 @@
 
 use error::MessageError;
 use message::Message;
-use message::p2p::{PeerFind, PredecessorGet, PredecessorSet, StorageGet, StoragePut};
+use message::p2p::{PeerFind, PredecessorNotify, StorageGet, StoragePut};
 use network::Connection;
 use routing::identifier::Identifier;
 use std::net::SocketAddr;
@@ -107,12 +107,12 @@ impl Procedures {
         Err(Box::new(MessageError::new(msg)))
     }
 
-    pub fn get_predecessor(&self, peer_addr: SocketAddr) -> ::Result<SocketAddr> {
+    pub fn notify_predecessor(&self, socket_addr: SocketAddr, peer_addr: SocketAddr) -> ::Result<SocketAddr> {
         debug!("Getting predecessor of peer {}", peer_addr);
 
         let mut con = Connection::open(peer_addr, self.timeout)?;
 
-        con.send(&Message::PredecessorGet(PredecessorGet))?;
+        con.send(&Message::PredecessorNotify(PredecessorNotify { socket_addr }))?;
 
         let msg = con.receive()?;
 
@@ -125,17 +125,5 @@ impl Procedures {
 
             Err(Box::new(MessageError::new(msg)))
         }
-    }
-
-    pub fn set_predecessor(&self, peer_addr: SocketAddr) -> ::Result<()> {
-        debug!("Setting predecessor of peer {}", peer_addr);
-
-        let mut con = Connection::open(peer_addr, self.timeout)?;
-
-        con.send(&Message::PredecessorSet(PredecessorSet))?;
-
-        info!("Predecessor of peer {} set", peer_addr);
-
-        Ok(())
     }
 }

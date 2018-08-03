@@ -64,11 +64,9 @@ impl Stabilization {
             return Ok(())
         }
 
-        let current_successor = *routing.successor;
+        info!("Obtaining new successor from current successor with address {}", *routing.successor);
 
-        info!("Obtaining new successor from current successor with address {}", current_successor);
-
-        let new_successor = self.procedures.get_predecessor(current_successor)?;
+        let new_successor = self.procedures.notify_predecessor(*routing.current, *routing.successor)?;
 
         let current_id = routing.current.identifier();
         let successor_id = routing.successor.identifier();

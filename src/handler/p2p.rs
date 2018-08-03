@@ -132,22 +132,21 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_predecessor_get(&self, mut con: Connection, _: PredecessorGet) -> ::Result<()> {
+    fn handle_predecessor_get(&self, mut con: Connection, predecessor_notify: PredecessorNotify) -> ::Result<()> {
         let mut routing = self.routing.lock().unwrap();
 
         info!("Received PREDECESSOR GET request");
 
-        let peer_addr = con.peer_addr()?;
         let socket_addr = *routing.predecessor;
 
         info!("Replying with PREDECESSOR REPLY and address {}", socket_addr);
 
         // 1. check if the predecessor is closer than the previous predecessor
-        if routing.responsible_for(peer_addr.identifier()) {
+        if routing.responsible_for(predecessor_notify.socket_addr.identifier()) {
             // 2. update the predecessor if necessary
-            routing.set_predecessor(peer_addr);
+            routing.set_predecessor(predecessor_notify.socket_addr);
 
-            info!("Updated predecessor to new address {}", peer_addr);
+            info!("Updated predecessor to new address {}", predecessor_notify.socket_addr);
 
             // TODO maybe check whether old predecessor is actually still reachable?
             // TODO give data to new predecessor!!!
@@ -155,37 +154,21 @@ impl P2PHandler {
 
         if *routing.predecessor == *routing.current {
             // if predecessor points to ourselves, update it to this peer.
-            routing.set_predecessor(peer_addr);
+            routing.set_predecessor(predecessor_notify.socket_addr);
+
+            info!("Updated predecessor to new address {}", predecessor_notify.socket_addr);
         }
 
         if *routing.successor == *routing.current {
             // If successor points to ourselves, update it to this peer.
-            routing.set_successor(peer_addr);
+            routing.set_successor(predecessor_notify.socket_addr);
+
+            info!("Updated successor to new address {}", predecessor_notify.socket_addr);
         }
 
         // 3. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
         con.send(&Message::PredecessorReply(predecessor_reply))?;
-
-        Ok(())
-    }
-
-    fn handle_predecessor_set(&self, con: Connection, _: PredecessorSet) -> ::Result<()> {
-        // TODO remove since redundant
-
-        let mut routing = self.routing.lock().unwrap();
-
-        info!("Received PREDECESSOR SET request");
-
-        let peer_addr = con.peer_addr()?;
-
-        // 1. check if the predecessor is closer than the previous predecessor
-        if routing.responsible_for(peer_addr.identifier()) {
-            // 2. update the predecessor if necessary
-            routing.set_predecessor(peer_addr);
-
-            info!("Updated predecessor to new address {}", peer_addr);
-        }
 
         Ok(())
     }
@@ -202,10 +185,8 @@ impl P2PHandler {
                 self.handle_storage_put(con, storage_put),
             Message::PeerFind(peer_find) =>
                 self.handle_peer_find(con, peer_find),
-            Message::PredecessorGet(predecessor_get) =>
+            Message::PredecessorNotify(predecessor_get) =>
                 self.handle_predecessor_get(con, predecessor_get),
-            Message::PredecessorSet(predecessor_set) =>
-                self.handle_predecessor_set(con, predecessor_set),
             _ =>
                 Err(Box::new(MessageError::new(msg)))
         }
