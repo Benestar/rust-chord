@@ -29,21 +29,14 @@ impl ApiHandler {
         Self { routing, procedures }
     }
 
-    /// Acquire the lock
-    fn lock_routing(&self) -> Result<MutexGuard<Routing<SocketAddr>>, &str> {
-        self.routing.lock()
-            .or(Err("Could not lock mutex for routing"))
+    fn closest_peer(&self, identifier: Identifier) -> SocketAddr {
+        let routing = self.routing.lock().unwrap();
+
+        **routing.closest_peer(identifier)
     }
 
     fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
-        let routing = self.lock_routing()?;
-
-        let closest_peer = **routing.closest_peer(identifier);
-
-        if closest_peer == *routing.current {
-            // avoid deadlock when requesting own predecessor
-            return Ok(*routing.current)
-        }
+        let closest_peer = self.closest_peer(identifier);
 
         self.procedures.find_peer(identifier, closest_peer)
     }

@@ -31,36 +31,28 @@ impl P2PHandler {
         Self { routing, storage }
     }
 
-    fn lock_routing(&self) -> Result<MutexGuard<Routing<SocketAddr>>, &str> {
-        self.routing.lock()
-            .or(Err("Could not lock mutex for routing"))
+    fn responsible_for(&self, identifier: Identifier) -> bool {
+        let routing = self.routing.lock().unwrap();
+
+        routing.responsible_for(identifier)
     }
 
-    fn lock_storage(&self) -> Result<MutexGuard<Storage>, &str> {
-        self.storage.lock()
-            .or(Err("Could not lock mutex for storage"))
+    fn get_from_storage(&self, key: Key) -> Option<Vec<u8>> {
+        let storage = self.storage.lock().unwrap();
+
+        storage.get(&key).map(Vec::clone)
     }
 
-    fn responsible_for(&self, identifier: Identifier) -> Result<bool, &str> {
-        let routing = self.lock_routing()?;
-        Ok(routing.responsible_for(identifier))
-    }
-
-    fn get_from_storage(&self, key: Key) -> ::Result<Option<Vec<u8>>> {
-        let storage = self.lock_storage()?;
-        Ok(storage.get(&key).map(Vec::clone))
-    }
-
-    fn put_to_storage(&self, key: Key, value: Vec<u8>) -> ::Result<bool> {
-        let mut storage = self.lock_storage()?;
+    fn put_to_storage(&self, key: Key, value: Vec<u8>) -> bool {
+        let mut storage = self.storage.lock().unwrap();
 
         if storage.contains_key(&key) {
-            return Ok(false)
+            return false
         }
 
         storage.insert(key, value);
 
-        Ok(true)
+        true
     }
 
     fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> ::Result<()> {
@@ -72,9 +64,9 @@ impl P2PHandler {
         info!("Received STORAGE GET request for key {}", key);
 
         // 1. check if given key falls into range
-        if self.responsible_for(key.identifier())? {
+        if self.responsible_for(key.identifier()) {
             // 2. find value for given key
-            let value_opt = self.get_from_storage(key)?;
+            let value_opt = self.get_from_storage(key);
 
             let msg = if let Some(value) = value_opt {
                 info!("Found value for key {} and replying with STORAGE GET SUCCESS", key);
@@ -102,9 +94,9 @@ impl P2PHandler {
         info!("Received STORAGE PUT request for key {}", key);
 
         // 1. check if given key falls into range
-        if self.responsible_for(key.identifier())? {
+        if self.responsible_for(key.identifier()) {
             // 2. save value for given key
-            let msg = if self.put_to_storage(key, storage_put.value)? {
+            let msg = if self.put_to_storage(key, storage_put.value) {
                 info!("Stored value for key {} and replying with STORAGE PUT SUCCESS", key);
 
                 Message::StoragePutSuccess(StoragePutSuccess { raw_key })
@@ -122,7 +114,7 @@ impl P2PHandler {
     }
 
     fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> ::Result<()> {
-        let routing = self.lock_routing()?;
+        let routing = self.routing.lock().unwrap();
 
         let identifier = peer_find.identifier;
 
@@ -145,7 +137,7 @@ impl P2PHandler {
     }
 
     fn handle_predecessor_get(&self, mut con: Connection, _: PredecessorGet) -> ::Result<()> {
-        let mut routing = self.lock_routing()?;
+        let mut routing = self.routing.lock().unwrap();
 
         info!("Received PREDECESSOR GET request");
 
@@ -175,7 +167,7 @@ impl P2PHandler {
     fn handle_predecessor_set(&self, con: Connection, _: PredecessorSet) -> ::Result<()> {
         // TODO remove since redundant
 
-        let mut routing = self.lock_routing()?;
+        let mut routing = self.routing.lock().unwrap();
 
         info!("Received PREDECESSOR SET request");
 
