@@ -8,7 +8,7 @@ use procedures::Procedures;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::Mutex;
 use std::u8;
 use storage::Key;
 use std::sync::Arc;

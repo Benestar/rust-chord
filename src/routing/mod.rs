@@ -65,6 +65,10 @@ impl<T: Identify> Routing<T> {
 
     /// Returns the peer closest to the given identifier.
     pub fn closest_peer(&self, identifier: Identifier) -> &IdentifierValue<T> {
+        if self.responsible_for(identifier) {
+            return &self.current;
+        }
+
         let diff = identifier - self.current.identifier();
         let zeros = diff.leading_zeros() as usize;
 

@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::Mutex;
 use storage::Key;
 use std::sync::Arc;
 
@@ -121,11 +121,7 @@ impl P2PHandler {
         info!("Received PEER FIND request for identifier {}", identifier);
 
         // 1. check if given key falls into range
-        let socket_addr = if routing.responsible_for(identifier) {
-            *routing.current
-        } else {
-            **routing.closest_peer(identifier)
-        };
+        let socket_addr = **routing.closest_peer(identifier);
 
         info!("Replying with PEER FOUND with address {}", socket_addr);
 
