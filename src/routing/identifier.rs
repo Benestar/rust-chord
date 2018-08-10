@@ -174,10 +174,10 @@ impl Identify for SocketAddrV4 {
     }
 }
 
-/// Obtains an identifier by hashing the first 16 octets of the ip address.
+/// Obtains an identifier by hashing the first eight octets of the ip address.
 impl Identify for SocketAddrV6 {
     fn identifier(&self) -> Identifier {
-        Identifier::generate(self.ip().octets().as_ref())
+        Identifier::generate(self.ip().octets()[..8].as_ref())
     }
 }
 
