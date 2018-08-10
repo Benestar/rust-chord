@@ -17,30 +17,32 @@
 //! [`Routing`]: struct.Routing.html
 
 use self::identifier::*;
+use std::collections::BinaryHeap;
 
 pub mod identifier;
 
 /// This struct stores routing information about other peers.
 #[derive(Debug)]
 pub struct Routing<T> {
+    /// Address where the peer is listening for peer-to-peer messages
     pub current: IdentifierValue<T>,
-    // TODO should maybe be an Option
+    /// The closest predecessor of this peer
     pub predecessor: IdentifierValue<T>,
-    // TODO use BinaryHeap for multiple successors
-    pub successor: IdentifierValue<T>,
-    // TODO
+    /// A list of successors of this peer
+    pub successors: BinaryHeap<IdentifierValue<T>>,
+    /// The finger table of
     finger_table: Vec<IdentifierValue<T>>
 }
 
-impl<T: Identify + Copy + Clone> Routing<T> {
+impl<T: Identify + Clone> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
-    pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>)
+    pub fn new(current: T, predecessor: T, successors: Vec<T>, finger_table: Vec<T>)
         -> Self
     {
         Self {
             current: IdentifierValue::new(current),
             predecessor: IdentifierValue::new(predecessor),
-            successor: IdentifierValue::new(successor),
+            successors: successors.into_iter().map(IdentifierValue::new).collect(),
             finger_table: finger_table.into_iter().map(IdentifierValue::new).collect()
         }
     }
@@ -58,7 +60,7 @@ impl<T: Identify + Copy + Clone> Routing<T> {
         let diff = self.successor.identifier() - self.current.identifier();
 
         for i in diff.leading_zeros() as usize..self.finger_table.len() {
-            self.finger_table[i] = self.successor;
+            self.finger_table[i] = self.successor.clone();
         }
     }
 
