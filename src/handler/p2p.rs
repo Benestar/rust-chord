@@ -2,7 +2,7 @@ use crate::error::MessageError;
 use crate::message::p2p::*;
 use crate::message::Message;
 use crate::network::{Connection, ServerHandler};
-use crate::routing::identifier::{Identifier, Identify};
+use crate::routing::identifier::{IdentifierU256, Identify};
 use crate::routing::Routing;
 use crate::storage::Key;
 use std::collections::HashMap;
@@ -30,13 +30,13 @@ impl P2PHandler {
         Self { routing, storage }
     }
 
-    fn responsible_for(&self, identifier: Identifier) -> bool {
+    fn responsible_for(&self, identifier: IdentifierU256) -> bool {
         let routing = self.routing.lock().unwrap();
 
         routing.responsible_for(identifier)
     }
 
-    fn closest_peer(&self, identifier: Identifier) -> SocketAddr {
+    fn closest_peer(&self, identifier: IdentifierU256) -> SocketAddr {
         let routing = self.routing.lock().unwrap();
 
         **routing.closest_peer(identifier)

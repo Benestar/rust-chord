@@ -3,7 +3,7 @@ use crate::message::api::*;
 use crate::message::Message;
 use crate::network::{Connection, ServerHandler};
 use crate::procedures::Procedures;
-use crate::routing::identifier::{Identifier, Identify};
+use crate::routing::identifier::{IdentifierU256, Identify};
 use crate::routing::Routing;
 use crate::storage::Key;
 use std::error::Error;
@@ -31,13 +31,13 @@ impl ApiHandler {
         }
     }
 
-    fn closest_peer(&self, identifier: Identifier) -> SocketAddr {
+    fn closest_peer(&self, identifier: IdentifierU256) -> SocketAddr {
         let routing = self.routing.lock().unwrap();
 
         **routing.closest_peer(identifier)
     }
 
-    fn find_peer(&self, identifier: Identifier) -> crate::Result<SocketAddr> {
+    fn find_peer(&self, identifier: IdentifierU256) -> crate::Result<SocketAddr> {
         let closest_peer = self.closest_peer(identifier);
 
         self.procedures.find_peer(identifier, closest_peer)
