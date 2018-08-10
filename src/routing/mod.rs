@@ -32,7 +32,7 @@ pub struct Routing<T> {
     finger_table: Vec<IdentifierValue<T>>
 }
 
-impl<T: Identify + Copy + Clone> Routing<T> {
+impl<T: Identify + Clone> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
     pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>)
         -> Self
@@ -58,7 +58,7 @@ impl<T: Identify + Copy + Clone> Routing<T> {
         let diff = self.successor.identifier() - self.current.identifier();
 
         for i in diff.leading_zeros() as usize..self.finger_table.len() {
-            self.finger_table[i] = self.successor;
+            self.finger_table[i] = self.successor.clone();
         }
     }
 
