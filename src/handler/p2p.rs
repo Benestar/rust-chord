@@ -49,7 +49,7 @@ impl P2PHandler {
         let old_predecessor_addr = *routing.predecessor;
 
         // 1. check if the predecessor is closer than the previous predecessor
-        if routing.responsible_for(predecessor_addr.identifier()) {
+        if routing.responsible_for(predecessor_addr.identify()) {
             // 2. update the predecessor if necessary
             routing.set_predecessor(predecessor_addr);
 
@@ -103,7 +103,7 @@ impl P2PHandler {
         info!("Received STORAGE GET request for key {}", key);
 
         // 1. check if given key falls into range
-        if self.responsible_for(key.identifier()) {
+        if self.responsible_for(key.identify()) {
             // 2. find value for given key
             let value_opt = self.get_from_storage(key);
 
@@ -133,7 +133,7 @@ impl P2PHandler {
         info!("Received STORAGE PUT request for key {}", key);
 
         // 1. check if given key falls into range
-        if self.responsible_for(key.identifier()) {
+        if self.responsible_for(key.identify()) {
             // 2. save value for given key
             let msg = if self.put_to_storage(key, storage_put.value) {
                 info!("Stored value for key {} and replying with STORAGE PUT SUCCESS", key);

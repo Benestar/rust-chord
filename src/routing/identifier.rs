@@ -164,40 +164,47 @@ impl fmt::Debug for Identifier {
 /// Trait to obtain an identifier from a data structure
 pub trait Identify {
     /// Generates an identifier for this object.
-    fn identifier(&self) -> Identifier;
+    fn identify(&self) -> Identifier;
 }
 
 /// Obtains an identifier by hashing the four octets of the ip address.
 impl Identify for SocketAddrV4 {
-    fn identifier(&self) -> Identifier {
+    fn identify(&self) -> Identifier {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
 /// Obtains an identifier by hashing the first eight octets of the ip address.
 impl Identify for SocketAddrV6 {
-    fn identifier(&self) -> Identifier {
+    fn identify(&self) -> Identifier {
         Identifier::generate(self.ip().octets()[..8].as_ref())
     }
 }
 
 /// Get the identifier for a V4 or V6 socket address.
 impl Identify for SocketAddr {
-    fn identifier(&self) -> Identifier {
+    fn identify(&self) -> Identifier {
         match self {
-            SocketAddr::V4(v4) => v4.identifier(),
-            SocketAddr::V6(v6) => v6.identifier()
+            SocketAddr::V4(v4) => v4.identify(),
+            SocketAddr::V6(v6) => v6.identify()
         }
     }
 }
 
 /// Hashes the raw key and its replication index.
 impl Identify for Key {
-    fn identifier(&self) -> Identifier {
+    fn identify(&self) -> Identifier {
         let mut bytes = [0; 33];
         bytes[..32].copy_from_slice(&self.raw_key);
         bytes[32] = self.replication_index;
         Identifier::generate(&bytes)
+    }
+}
+
+/// Returns the identifier itself.
+impl Identify for Identifier {
+    fn identify(&self) -> Identifier {
+        *self
     }
 }
 
@@ -212,7 +219,7 @@ impl<T: Identify> IdentifierValue<T> {
     /// Obtains the identifier for the given `value` and stores it along with
     /// the value in an `IdentifierValue` object.
     pub fn new(value: T) -> Self {
-        let identifier = value.identifier();
+        let identifier = value.identify();
 
         Self { value, identifier }
     }

@@ -46,7 +46,7 @@ impl ApiHandler {
         for i in 0..u8::MAX {
             let key = Key { raw_key: dht_get.key, replication_index: i };
 
-            let peer_addr = self.find_peer(key.identifier())?;
+            let peer_addr = self.find_peer(key.identify())?;
 
             if let Some(value) = self.procedures.get_value(peer_addr, key)? {
                 let dht_success = DhtSuccess { key: dht_get.key, value };
@@ -68,7 +68,7 @@ impl ApiHandler {
         for i in 0..dht_put.replication + 1 {
             let key = Key { raw_key: dht_put.key, replication_index: i };
 
-            let peer_addr = self.find_peer(key.identifier())?;
+            let peer_addr = self.find_peer(key.identify())?;
 
             self.procedures.put_value(peer_addr, key, dht_put.ttl, dht_put.value.clone())?;
         }

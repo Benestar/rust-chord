@@ -35,7 +35,7 @@ impl Bootstrap {
     /// scucessor peer. Finally, we initialize the finger table with our own address.
     pub fn bootstrap(&self, timeout: u64) -> ::Result<Routing<SocketAddr>> {
         let procedures = Procedures::new(timeout);
-        let current_id = self.current_addr.identifier();
+        let current_id = self.current_addr.identify();
 
         let successor = procedures.find_peer(current_id, self.boot_addr)?;
         let predecessor = procedures.notify_predecessor(self.current_addr, self.boot_addr)?;
@@ -95,7 +95,7 @@ impl Stabilization {
         let current_id = current.identifier();
         let successor_id = successor.identifier();
 
-        if new_successor.identifier().is_between(&current_id, &successor_id) {
+        if new_successor.identify().is_between(&current_id, &successor_id) {
             info!("Updating successor to address {}", new_successor);
 
             let mut routing = self.routing.lock().unwrap();
