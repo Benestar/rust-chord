@@ -4,13 +4,12 @@ use crate::message::p2p::*;
 use crate::network::{Connection, ServerHandler};
 use crate::routing::identifier::{Identifier, Identify};
 use crate::routing::Routing;
+use crate::storage::Key;
 use std::collections::HashMap;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::Mutex;
-use crate::storage::Key;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 type Storage = HashMap<Key, Vec<u8>>;
 
