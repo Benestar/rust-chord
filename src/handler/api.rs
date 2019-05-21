@@ -2,16 +2,15 @@ use crate::error::MessageError;
 use crate::message::api::*;
 use crate::message::Message;
 use crate::network::{Connection, ServerHandler};
+use crate::procedures::Procedures;
 use crate::routing::identifier::{Identify, Identifier};
 use crate::routing::Routing;
-use crate::procedures::Procedures;
+use crate::storage::Key;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::u8;
-use crate::storage::Key;
-use std::sync::Arc;
 
 /// Handler for api requests
 ///
