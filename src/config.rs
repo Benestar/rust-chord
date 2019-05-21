@@ -13,7 +13,7 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn load_from_file<P: AsRef<Path>>(filename: P) -> ::Result<Config> {
+    pub fn load_from_file<P: AsRef<Path>>(filename: P) -> crate::Result<Config> {
         let conf = Ini::load_from_file(filename)?;
 
         let dht = conf.section(Some("dht"))

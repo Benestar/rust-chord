@@ -1,17 +1,16 @@
-use error::MessageError;
-use message::api::*;
-use message::Message;
-use network::{Connection, ServerHandler};
-use routing::identifier::{Identify, Identifier};
-use routing::Routing;
-use procedures::Procedures;
+use crate::error::MessageError;
+use crate::message::api::*;
+use crate::message::Message;
+use crate::network::{Connection, ServerHandler};
+use crate::procedures::Procedures;
+use crate::routing::identifier::{Identify, Identifier};
+use crate::routing::Routing;
+use crate::storage::Key;
 use std::error::Error;
 use std::io;
 use std::net::SocketAddr;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use std::u8;
-use storage::Key;
-use std::sync::Arc;
 
 /// Handler for api requests
 ///
@@ -35,13 +34,13 @@ impl ApiHandler {
         **routing.closest_peer(identifier)
     }
 
-    fn find_peer(&self, identifier: Identifier) -> ::Result<SocketAddr> {
+    fn find_peer(&self, identifier: Identifier) -> crate::Result<SocketAddr> {
         let closest_peer = self.closest_peer(identifier);
 
         self.procedures.find_peer(identifier, closest_peer)
     }
 
-    fn handle_dht_get(&self, mut api_con: Connection, dht_get: DhtGet) -> ::Result<()> {
+    fn handle_dht_get(&self, mut api_con: Connection, dht_get: DhtGet) -> crate::Result<()> {
         // iterate through all replication indices
         for i in 0..u8::MAX {
             let key = Key { raw_key: dht_get.key, replication_index: i };
@@ -63,7 +62,7 @@ impl ApiHandler {
         Ok(())
     }
 
-    fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut) -> ::Result<()> {
+    fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut) -> crate::Result<()> {
         // iterate through all replication indices
         for i in 0..dht_put.replication + 1 {
             let key = Key { raw_key: dht_put.key, replication_index: i };
@@ -76,7 +75,7 @@ impl ApiHandler {
         Ok(())
     }
 
-    fn handle_connection(&self, mut con: Connection) -> ::Result<()> {
+    fn handle_connection(&self, mut con: Connection) -> crate::Result<()> {
         let msg = con.receive()?;
 
         info!("Api handler received message of type {}", msg);

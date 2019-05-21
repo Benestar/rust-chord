@@ -20,7 +20,7 @@ use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
 use std::ops::{Add, Sub};
 use std::ops::Deref;
-use storage::Key;
+use crate::storage::Key;
 
 /// A 256 bit identifier on an identifier circle
 #[derive(Copy, Clone, PartialEq)]
