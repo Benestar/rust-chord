@@ -73,7 +73,7 @@ impl ApiHandler {
 
     fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut) -> crate::Result<()> {
         // iterate through all replication indices
-        for i in 0..dht_put.replication + 1 {
+        for i in 0..=dht_put.replication {
             let key = Key {
                 raw_key: dht_put.key,
                 replication_index: i,
