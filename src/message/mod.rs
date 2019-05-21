@@ -7,9 +7,9 @@
 //! [`Message`]: enum.Message.html
 //! [`Connection`]: ../network/struct.Connection.html
 
-use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use self::api::*;
 use self::p2p::*;
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt;
 use std::io;
 use std::io::prelude::*;
@@ -101,42 +101,38 @@ impl Message {
         let msg_type = reader.read_u16::<NetworkEndian>()?;
 
         if size < 4 {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                      "Size must include header"))
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Size must include header",
+            ));
         }
 
         let reader = &mut reader.take(u64::from(size) - 4);
 
         match msg_type {
-            Self::DHT_PUT =>
-                MessagePayload::parse(reader).map(Message::DhtPut),
-            Self::DHT_GET =>
-                MessagePayload::parse(reader).map(Message::DhtGet),
-            Self::DHT_SUCCESS =>
-                MessagePayload::parse(reader).map(Message::DhtSuccess),
-            Self::DHT_FAILURE =>
-                MessagePayload::parse(reader).map(Message::DhtFailure),
-            Self::STORAGE_GET =>
-                MessagePayload::parse(reader).map(Message::StorageGet),
-            Self::STORAGE_PUT =>
-                MessagePayload::parse(reader).map(Message::StoragePut),
-            Self::STORAGE_GET_SUCCESS =>
-                MessagePayload::parse(reader).map(Message::StorageGetSuccess),
-            Self::STORAGE_PUT_SUCCESS =>
-                MessagePayload::parse(reader).map(Message::StoragePutSuccess),
-            Self::STORAGE_FAILURE =>
-                MessagePayload::parse(reader).map(Message::StorageFailure),
-            Self::PEER_FIND =>
-                MessagePayload::parse(reader).map(Message::PeerFind),
-            Self::PEER_FOUND =>
-                MessagePayload::parse(reader).map(Message::PeerFound),
-            Self::PREDECESSOR_NOTIFY =>
-                MessagePayload::parse(reader).map(Message::PredecessorNotify),
-            Self::PREDECESSOR_REPLY =>
-                MessagePayload::parse(reader).map(Message::PredecessorReply),
-            _ =>
-                Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                   "Invalid message type"))
+            Self::DHT_PUT => MessagePayload::parse(reader).map(Message::DhtPut),
+            Self::DHT_GET => MessagePayload::parse(reader).map(Message::DhtGet),
+            Self::DHT_SUCCESS => MessagePayload::parse(reader).map(Message::DhtSuccess),
+            Self::DHT_FAILURE => MessagePayload::parse(reader).map(Message::DhtFailure),
+            Self::STORAGE_GET => MessagePayload::parse(reader).map(Message::StorageGet),
+            Self::STORAGE_PUT => MessagePayload::parse(reader).map(Message::StoragePut),
+            Self::STORAGE_GET_SUCCESS => {
+                MessagePayload::parse(reader).map(Message::StorageGetSuccess)
+            }
+            Self::STORAGE_PUT_SUCCESS => {
+                MessagePayload::parse(reader).map(Message::StoragePutSuccess)
+            }
+            Self::STORAGE_FAILURE => MessagePayload::parse(reader).map(Message::StorageFailure),
+            Self::PEER_FIND => MessagePayload::parse(reader).map(Message::PeerFind),
+            Self::PEER_FOUND => MessagePayload::parse(reader).map(Message::PeerFound),
+            Self::PREDECESSOR_NOTIFY => {
+                MessagePayload::parse(reader).map(Message::PredecessorNotify)
+            }
+            Self::PREDECESSOR_REPLY => MessagePayload::parse(reader).map(Message::PredecessorReply),
+            _ => Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Invalid message type",
+            )),
         }
     }
 
@@ -239,13 +235,14 @@ pub trait MessagePayload: Sized {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::error::Error;
     use std::fmt::Debug;
     use std::io::{self, Cursor};
-    use super::*;
 
     pub fn test_message_payload<T>(buf: &[u8], msg: T)
-        where T: MessagePayload + Debug + PartialEq
+    where
+        T: MessagePayload + Debug + PartialEq,
     {
         let mut cursor = Cursor::new(&buf[..]);
         let parsed = T::parse(&mut cursor).unwrap();
@@ -258,6 +255,7 @@ mod tests {
 
     #[test]
     fn message_parse() {
+        #[rustfmt::skip]
         let buf = [
             // header
             0, 45, 2, 138,
@@ -295,6 +293,7 @@ mod tests {
 
     #[test]
     fn message_parse_wrong_size() {
+        #[rustfmt::skip]
         let buf = [
             // header
             0, 36, 2, 139,
@@ -309,6 +308,7 @@ mod tests {
 
     #[test]
     fn message_parse_zero_size() {
+        #[rustfmt::skip]
         let buf = [
             // header
             0, 0, 4, 28,
@@ -322,6 +322,7 @@ mod tests {
 
     #[test]
     fn message_parse_invalid_message_type() {
+        #[rustfmt::skip]
         let buf = [
             // header
             0, 4, 2, 14
@@ -335,6 +336,7 @@ mod tests {
 
     #[test]
     fn message_write_to() {
+        #[rustfmt::skip]
         let buf = [
             // header
             0, 45, 2, 138,

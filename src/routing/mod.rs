@@ -29,19 +29,17 @@ pub struct Routing<T> {
     // TODO use BinaryHeap for multiple successors
     pub successor: IdentifierValue<T>,
     // TODO
-    finger_table: Vec<IdentifierValue<T>>
+    finger_table: Vec<IdentifierValue<T>>,
 }
 
 impl<T: Identify + Copy + Clone> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
-    pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>)
-        -> Self
-    {
+    pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>) -> Self {
         Self {
             current: IdentifierValue::new(current),
             predecessor: IdentifierValue::new(predecessor),
             successor: IdentifierValue::new(successor),
-            finger_table: finger_table.into_iter().map(IdentifierValue::new).collect()
+            finger_table: finger_table.into_iter().map(IdentifierValue::new).collect(),
         }
     }
 
@@ -74,10 +72,7 @@ impl<T: Identify + Copy + Clone> Routing<T> {
 
     /// Checks whether this peer is responsible for the given identifier.
     pub fn responsible_for(&self, identifier: Identifier) -> bool {
-        identifier.is_between(
-            &self.predecessor.identifier(),
-            &self.current.identifier()
-        )
+        identifier.is_between(&self.predecessor.identifier(), &self.current.identifier())
     }
 
     /// Returns the peer closest to the given identifier.

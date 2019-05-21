@@ -1,7 +1,7 @@
+use super::MessagePayload;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::prelude::*;
-use super::MessagePayload;
 
 /// This message is used to ask the DHT module that the given key-value pair
 /// should be stored.
@@ -25,7 +25,7 @@ pub struct DhtPut {
     pub ttl: u16,
     pub replication: u8,
     pub key: [u8; 32],
-    pub value: Vec<u8>
+    pub value: Vec<u8>,
 }
 
 /// This message is used to ask the DHT method to search for a given key and
@@ -36,7 +36,7 @@ pub struct DhtPut {
 /// the given key.
 #[derive(Debug, PartialEq)]
 pub struct DhtGet {
-    pub key: [u8; 32]
+    pub key: [u8; 32],
 }
 
 /// This message is sent when a previous [`DhtGet`] operation found a value
@@ -46,7 +46,7 @@ pub struct DhtGet {
 #[derive(Debug, PartialEq)]
 pub struct DhtSuccess {
     pub key: [u8; 32],
-    pub value: Vec<u8>
+    pub value: Vec<u8>,
 }
 
 /// This message is sent when a previous [`DhtGet`] operation did not find any
@@ -55,7 +55,7 @@ pub struct DhtSuccess {
 /// [`DhtGet`]: struct.DhtGet.html
 #[derive(Debug, PartialEq)]
 pub struct DhtFailure {
-    pub key: [u8; 32]
+    pub key: [u8; 32],
 }
 
 impl MessagePayload for DhtPut {
@@ -72,7 +72,12 @@ impl MessagePayload for DhtPut {
         let mut value = Vec::new();
         reader.read_to_end(&mut value)?;
 
-        Ok(DhtPut { ttl, replication, key, value })
+        Ok(DhtPut {
+            ttl,
+            replication,
+            key,
+            value,
+        })
     }
 
     fn write_to(&self, writer: &mut Write) -> io::Result<()> {
@@ -137,11 +142,12 @@ impl MessagePayload for DhtFailure {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::tests::test_message_payload;
+    use super::*;
 
     #[test]
     fn dht_put() {
+        #[rustfmt::skip]
         let buf = [
             // TTL, replication and reserved
             0, 12, 4, 0,
@@ -164,21 +170,21 @@ mod tests {
 
     #[test]
     fn dht_get() {
+        #[rustfmt::skip]
         let buf = [
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         ];
 
-        let msg = DhtGet {
-            key: [3; 32],
-        };
+        let msg = DhtGet { key: [3; 32] };
 
         test_message_payload(&buf, msg);
     }
 
     #[test]
     fn dht_success() {
+        #[rustfmt::skip]
         let buf = [
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
@@ -197,15 +203,14 @@ mod tests {
 
     #[test]
     fn dht_failure() {
+        #[rustfmt::skip]
         let buf = [
             // 32 bytes for key
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
         ];
 
-        let msg = DhtFailure {
-            key: [3; 32],
-        };
+        let msg = DhtFailure { key: [3; 32] };
 
         test_message_payload(&buf, msg);
     }

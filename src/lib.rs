@@ -77,22 +77,25 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-pub mod error;
 pub mod config;
+pub mod error;
 pub mod handler;
 pub mod message;
 pub mod network;
-pub mod routing;
-pub mod storage;
 pub mod procedures;
+pub mod routing;
 pub mod stabilization;
+pub mod storage;
 
 type Result<T> = std::result::Result<T, Box<Error>>;
 
 pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     info!("Distributed Hash Table based on CHORD");
     info!("-------------------------------------\n");
-    debug!("The current configuration is as follows.\n\n{:#?}\n", &config);
+    debug!(
+        "The current configuration is as follows.\n\n{:#?}\n",
+        &config
+    );
 
     let routing = if let Some(bootstrap_address) = bootstrap {
         info!("Connection to bootstrap peer {}", bootstrap_address);
@@ -103,7 +106,12 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
         info!("No bootstrapping peer provided, creating new network");
 
         let finger_table = vec![config.listen_address; config.fingers];
-        Routing::new(config.listen_address, config.listen_address, config.listen_address, finger_table)
+        Routing::new(
+            config.listen_address,
+            config.listen_address,
+            config.listen_address,
+            finger_table,
+        )
     };
 
     let routing = Arc::new(Mutex::new(routing));
@@ -117,14 +125,12 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     let api_handle = api_server.listen(config.api_address, 1)?;
 
     let mut stabilization = Stabilization::new(Arc::clone(&routing), config.timeout);
-    let stabilization_handle = thread::spawn(move || {
-        loop {
-            if let Err(err) = stabilization.stabilize() {
-                error!("Error during stabilization:\n\n{:?}", err);
-            }
-
-            thread::sleep(Duration::from_secs(config.stabilization_interval));
+    let stabilization_handle = thread::spawn(move || loop {
+        if let Err(err) = stabilization.stabilize() {
+            error!("Error during stabilization:\n\n{:?}", err);
         }
+
+        thread::sleep(Duration::from_secs(config.stabilization_interval));
     });
 
     if let Err(err) = p2p_handle.join() {

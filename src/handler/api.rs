@@ -3,7 +3,7 @@ use crate::message::api::*;
 use crate::message::Message;
 use crate::network::{Connection, ServerHandler};
 use crate::procedures::Procedures;
-use crate::routing::identifier::{Identify, Identifier};
+use crate::routing::identifier::{Identifier, Identify};
 use crate::routing::Routing;
 use crate::storage::Key;
 use std::error::Error;
@@ -17,7 +17,7 @@ use std::u8;
 /// The supported incoming api messages are `DHT GET` and `DHT PUT`.
 pub struct ApiHandler {
     routing: Arc<Mutex<Routing<SocketAddr>>>,
-    procedures: Procedures
+    procedures: Procedures,
 }
 
 impl ApiHandler {
@@ -25,7 +25,10 @@ impl ApiHandler {
     pub fn new(routing: Arc<Mutex<Routing<SocketAddr>>>, timeout: u64) -> Self {
         let procedures = Procedures::new(timeout);
 
-        Self { routing, procedures }
+        Self {
+            routing,
+            procedures,
+        }
     }
 
     fn closest_peer(&self, identifier: Identifier) -> SocketAddr {
@@ -43,15 +46,21 @@ impl ApiHandler {
     fn handle_dht_get(&self, mut api_con: Connection, dht_get: DhtGet) -> crate::Result<()> {
         // iterate through all replication indices
         for i in 0..u8::MAX {
-            let key = Key { raw_key: dht_get.key, replication_index: i };
+            let key = Key {
+                raw_key: dht_get.key,
+                replication_index: i,
+            };
 
             let peer_addr = self.find_peer(key.identifier())?;
 
             if let Some(value) = self.procedures.get_value(peer_addr, key)? {
-                let dht_success = DhtSuccess { key: dht_get.key, value };
+                let dht_success = DhtSuccess {
+                    key: dht_get.key,
+                    value,
+                };
                 api_con.send(&Message::DhtSuccess(dht_success))?;
 
-                return Ok(())
+                return Ok(());
             }
         }
 
@@ -65,11 +74,15 @@ impl ApiHandler {
     fn handle_dht_put(&self, _con: Connection, dht_put: DhtPut) -> crate::Result<()> {
         // iterate through all replication indices
         for i in 0..dht_put.replication + 1 {
-            let key = Key { raw_key: dht_put.key, replication_index: i };
+            let key = Key {
+                raw_key: dht_put.key,
+                replication_index: i,
+            };
 
             let peer_addr = self.find_peer(key.identifier())?;
 
-            self.procedures.put_value(peer_addr, key, dht_put.ttl, dht_put.value.clone())?;
+            self.procedures
+                .put_value(peer_addr, key, dht_put.ttl, dht_put.value.clone())?;
         }
 
         Ok(())
@@ -81,12 +94,9 @@ impl ApiHandler {
         info!("Api handler received message of type {}", msg);
 
         match msg {
-            Message::DhtGet(dht_get) =>
-                self.handle_dht_get(con, dht_get),
-            Message::DhtPut(dht_put) =>
-                self.handle_dht_put(con, dht_put),
-            _ =>
-                Err(Box::new(MessageError::new(msg)))
+            Message::DhtGet(dht_get) => self.handle_dht_get(con, dht_get),
+            Message::DhtPut(dht_put) => self.handle_dht_put(con, dht_put),
+            _ => Err(Box::new(MessageError::new(msg))),
         }
     }
 

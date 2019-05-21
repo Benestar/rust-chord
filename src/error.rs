@@ -19,7 +19,7 @@ use std::fmt;
 /// [`io::Error`]: ../std/io/struct.Error.html
 #[derive(Debug)]
 pub struct MessageError {
-    msg: Message
+    msg: Message,
 }
 
 impl MessageError {

@@ -3,19 +3,21 @@ extern crate structopt;
 
 use dht::config::Config;
 use dht::message::api::{DhtGet, DhtPut};
+use dht::message::Message;
+use dht::network::Connection;
 use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process;
 use structopt::StructOpt;
-use dht::network::Connection;
-use dht::message::Message;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "api",
-version = "0.1",
-author = "Benedikt Seidl, Stefan Su",
-about = "Client to talk to the DHT api")]
+#[structopt(
+    name = "api",
+    version = "0.1",
+    author = "Benedikt Seidl, Stefan Su",
+    about = "Client to talk to the DHT api"
+)]
 struct Opt {
     /// Path to a custom config file
     #[structopt(short = "c", parse(from_os_str))]
@@ -91,9 +93,7 @@ fn handle_get(config: Config) {
     let mut raw_key = [0; 32];
     raw_key[..len].copy_from_slice(&key.as_bytes()[..len]);
 
-    let dht_get = DhtGet {
-        key: raw_key,
-    };
+    let dht_get = DhtGet { key: raw_key };
 
     let mut con = Connection::open(config.api_address, config.timeout).unwrap();
     con.send(&Message::DhtGet(dht_get)).unwrap();
@@ -108,6 +108,6 @@ fn handle_get(config: Config) {
             let key = std::str::from_utf8(&dht_failure.key).unwrap();
             println!("Failed to retrieve value for key {}", key);
         }
-        msg => eprintln!("Unexpected message of type {}", msg)
+        msg => eprintln!("Unexpected message of type {}", msg),
     }
 }
