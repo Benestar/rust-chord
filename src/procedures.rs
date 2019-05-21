@@ -5,8 +5,8 @@ use crate::message::Message;
 use crate::message::p2p::{PeerFind, PredecessorNotify, StorageGet, StoragePut};
 use crate::network::Connection;
 use crate::routing::identifier::Identifier;
-use std::net::SocketAddr;
 use crate::storage::Key;
+use std::net::SocketAddr;
 
 pub struct Procedures {
     timeout: u64
