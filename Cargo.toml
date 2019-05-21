@@ -2,13 +2,14 @@
 name = "dht"
 version = "0.1.0"
 authors = ["bene"]
+edition = "2018"
 
 [dependencies]
-bigint = { version = "4.4.0", features = ["std"] }
-byteorder = "1.2.3"
-log = "0.4.3"
-ring = "0.12.1"
-rust-ini = "0.12.2"
+bigint = { version = "4.4.1", features = ["std"] }
+byteorder = "1.3.1"
+log = "0.4.6"
+ring = "0.14.6"
+rust-ini = "0.13.0"
 stderrlog = "0.4.1"
-structopt = "0.2.10"
+structopt = "0.2.15"
 threadpool = "1.7.1"

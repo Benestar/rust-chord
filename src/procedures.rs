@@ -1,12 +1,12 @@
 //! A collection of procedures used in various places.
 
-use error::MessageError;
-use message::Message;
-use message::p2p::{PeerFind, PredecessorNotify, StorageGet, StoragePut};
-use network::Connection;
-use routing::identifier::Identifier;
+use crate::error::MessageError;
+use crate::message::Message;
+use crate::message::p2p::{PeerFind, PredecessorNotify, StorageGet, StoragePut};
+use crate::network::Connection;
+use crate::routing::identifier::Identifier;
 use std::net::SocketAddr;
-use storage::Key;
+use crate::storage::Key;
 
 pub struct Procedures {
     timeout: u64
@@ -22,7 +22,7 @@ impl Procedures {
     /// This iteratively sends PEER FIND messages to successive peers,
     /// beginning with `peer_addr` which could be taken from a finger table.
     pub fn find_peer(&self, identifier: Identifier, mut peer_addr: SocketAddr)
-         -> ::Result<SocketAddr>
+         -> crate::Result<SocketAddr>
     {
         debug!("Finding peer for identifier {}", identifier);
 
@@ -54,7 +54,7 @@ impl Procedures {
     /// Opens a P2P connection to `peer_addr` and sends a STORAGE GET message to retrieve a value for
     /// `key` depending on the reply.
     pub fn get_value(&self, peer_addr: SocketAddr, key: Key)
-        -> ::Result<Option<Vec<u8>>>
+        -> crate::Result<Option<Vec<u8>>>
     {
         debug!("Get value for key {} from peer {}", key, peer_addr);
 
@@ -83,7 +83,7 @@ impl Procedures {
     ///
     /// Opens a P2P connection to `peer_addr` and sends a STORAGE PUT message to store `value` under `key`.
     pub fn put_value(&self, peer_addr: SocketAddr, key: Key, ttl: u16, value: Vec<u8>)
-        -> ::Result<()>
+        -> crate::Result<()>
     {
         debug!("Put value for key {} to peer {}", key, peer_addr);
 
@@ -118,7 +118,7 @@ impl Procedures {
     ///
     /// Opens a P2P connection and sends a PREDECESSOR NOTIFY message to `peer_addr` to receive a
     /// reply with the socket addres of `socket_addr`.
-    pub fn notify_predecessor(&self, socket_addr: SocketAddr, peer_addr: SocketAddr) -> ::Result<SocketAddr> {
+    pub fn notify_predecessor(&self, socket_addr: SocketAddr, peer_addr: SocketAddr) -> crate::Result<SocketAddr> {
         debug!("Getting predecessor of peer {}", peer_addr);
 
         let mut con = Connection::open(peer_addr, self.timeout)?;

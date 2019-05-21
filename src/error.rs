@@ -5,7 +5,7 @@
 //!
 //! [`MessageError`]: struct.MessageError.html
 
-use message::Message;
+use crate::message::Message;
 use std::error::Error;
 use std::fmt;
 

@@ -66,11 +66,11 @@ extern crate log;
 extern crate ring;
 extern crate threadpool;
 
-use config::Config;
-use handler::{ApiHandler, P2PHandler};
-use network::Server;
-use routing::Routing;
-use stabilization::{Bootstrap, Stabilization};
+use crate::config::Config;
+use crate::handler::{ApiHandler, P2PHandler};
+use crate::network::Server;
+use crate::routing::Routing;
+use crate::stabilization::{Bootstrap, Stabilization};
 use std::error::Error;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};

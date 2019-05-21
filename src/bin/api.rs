@@ -1,5 +1,4 @@
 extern crate dht;
-#[macro_use]
 extern crate structopt;
 
 use dht::config::Config;

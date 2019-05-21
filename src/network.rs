@@ -7,7 +7,7 @@
 //!
 //! [`Message`]: ../message/enum.Message.html
 
-use message::Message;
+use crate::message::Message;
 use std::io;
 use std::io::prelude::*;
 use std::net::*;

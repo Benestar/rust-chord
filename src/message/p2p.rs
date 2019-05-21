@@ -1,5 +1,5 @@
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
-use routing::identifier::Identifier;
+use crate::routing::identifier::Identifier;
 use std::io;
 use std::io::prelude::*;
 use std::net::{IpAddr, Ipv6Addr, SocketAddr};

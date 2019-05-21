@@ -5,10 +5,10 @@
 //!
 //! [`Stabilization`]: struct.Stabilization.html
 
-use routing::identifier::*;
-use routing::Routing;
+use crate::routing::identifier::*;
+use crate::routing::Routing;
 use std::net::SocketAddr;
-use procedures::Procedures;
+use crate::procedures::Procedures;
 use std::sync::Mutex;
 use std::sync::Arc;
 
@@ -33,7 +33,7 @@ impl Bootstrap {
     /// will become our successor. After that we obtain the current predecessor of that peer
     /// and set it as our predecessor which also updates the predecessor information of the
     /// scucessor peer. Finally, we initialize the finger table with our own address.
-    pub fn bootstrap(&self, timeout: u64) -> ::Result<Routing<SocketAddr>> {
+    pub fn bootstrap(&self, timeout: u64) -> crate::Result<Routing<SocketAddr>> {
         let procedures = Procedures::new(timeout);
         let current_id = self.current_addr.identifier();
 
@@ -68,7 +68,7 @@ impl Stabilization {
     ///
     /// After that the finger tables are updated by iterating through each entry and finding the
     /// peer responsible for that finger.
-    pub fn stabilize(&mut self) -> ::Result<()> {
+    pub fn stabilize(&mut self) -> crate::Result<()> {
         info!("Stabilizing routing information");
 
         let update_successor = self.update_successor();
@@ -81,7 +81,7 @@ impl Stabilization {
         update_successor.and(update_fingers)
     }
 
-    fn update_successor(&self) -> ::Result<()> {
+    fn update_successor(&self) -> crate::Result<()> {
         let (current, successor) = {
             let routing = self.routing.lock().unwrap();
 
@@ -105,7 +105,7 @@ impl Stabilization {
         Ok(())
     }
 
-    fn update_fingers(&self) -> ::Result<()> {
+    fn update_fingers(&self) -> crate::Result<()> {
         let (current, successor, fingers) = {
             let routing = self.routing.lock().unwrap();
 
