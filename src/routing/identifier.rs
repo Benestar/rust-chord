@@ -23,7 +23,7 @@ use std::ops::Deref;
 use std::ops::{Add, Sub};
 
 /// A 256 bit identifier on an identifier circle
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Identifier(U256);
 
 impl Identifier {
@@ -143,21 +143,6 @@ impl Sub for Identifier {
 impl fmt::Display for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "‹{}›", self.0)
-    }
-}
-
-impl fmt::Debug for Identifier {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let bytes = self.as_bytes();
-        let mut iter = bytes.iter();
-
-        write!(f, "‹{:02x}", iter.next().unwrap())?;
-
-        for byte in iter {
-            write!(f, ":{:02x}", byte)?;
-        }
-
-        write!(f, "›")
     }
 }
 

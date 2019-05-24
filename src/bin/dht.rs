@@ -44,7 +44,6 @@ fn main() {
 
     // init logger with verbosity flag
     stderrlog::new()
-        .module(module_path!())
         .quiet(opt.quiet)
         .verbosity(opt.verbose)
         .timestamp(opt.timestamp.unwrap_or(stderrlog::Timestamp::Off))
