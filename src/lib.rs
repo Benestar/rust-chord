@@ -90,20 +90,21 @@ pub mod storage;
 type Result<T> = std::result::Result<T, Box<Error>>;
 
 pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
-    info!("Distributed Hash Table based on CHORD");
-    info!("-------------------------------------\n");
+    println!("Distributed Hash Table based on CHORD");
+    println!("-------------------------------------\n");
+
     debug!(
         "The current configuration is as follows.\n\n{:#?}\n",
         &config
     );
 
     let routing = if let Some(bootstrap_address) = bootstrap {
-        info!("Connection to bootstrap peer {}", bootstrap_address);
+        println!("Connecting to bootstrap peer {}...", bootstrap_address);
 
         let bootstrap = Bootstrap::new(config.listen_address, bootstrap_address, config.fingers);
         bootstrap.bootstrap(config.timeout)?
     } else {
-        info!("No bootstrapping peer provided, creating new network");
+        println!("No bootstrapping peer provided, creating new network...");
 
         let finger_table = vec![config.listen_address; config.fingers];
         Routing::new(

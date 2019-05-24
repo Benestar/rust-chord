@@ -42,23 +42,22 @@ struct Opt {
 fn main() {
     let opt = Opt::from_args();
 
+    // init logger with verbosity flag
     stderrlog::new()
         .module(module_path!())
         .quiet(opt.quiet)
         .verbosity(opt.verbose)
         .timestamp(opt.timestamp.unwrap_or(stderrlog::Timestamp::Off))
         .init()
-        .unwrap();
+        .expect("Failed to initialize logger");
 
     let config = Config::load_from_file(opt.config).unwrap_or_else(|err| {
-        error!("Argument error: {}", err);
+        error!("Error while loading config file: {}", err);
         process::exit(2);
     });
 
-    // TODO init logger with verbosity flag
-
     if let Err(e) = dht::run(config, opt.bootstrap) {
-        error!("Application error: {}", e);
+        error!("Fatal application error: {}", e);
         process::exit(1);
     }
 }
