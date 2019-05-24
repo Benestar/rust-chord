@@ -21,14 +21,19 @@ use self::identifier::*;
 pub mod identifier;
 
 /// This struct stores routing information about other peers.
+///
+/// The type parameter `T` is used to describe the identifying property of a
+/// peer, for example its socket address.
 #[derive(Debug)]
 pub struct Routing<T> {
+    /// Address where this peer is listening for peer-to-peer messages
     pub current: IdentifierValue<T>,
-    // TODO should maybe be an Option
+    /// Closest predecessor of this pee
     pub predecessor: IdentifierValue<T>,
+    /// Successor of this peer
     // TODO use BinaryHeap for multiple successors
     pub successor: IdentifierValue<T>,
-    // TODO
+    /// The finger table of this peer with pointers accross the network
     finger_table: Vec<IdentifierValue<T>>,
 }
 
