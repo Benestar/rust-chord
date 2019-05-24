@@ -25,5 +25,5 @@ script:
     - cargo build --all
     - cargo test --all
 
-notification:
+notifications:
     email: false
