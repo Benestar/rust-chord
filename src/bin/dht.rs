@@ -11,10 +11,12 @@ use std::process;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "dht",
-            version = "0.1",
-            author = "Benedikt Seidl, Stefan Su",
-            about = "Distributed Hash Table based on Chord")]
+#[structopt(
+    name = "dht",
+    version = "0.1",
+    author = "Benedikt Seidl, Stefan Su",
+    about = "Distributed Hash Table based on Chord"
+)]
 struct Opt {
     /// Path to a custom config file
     #[structopt(short = "c", parse(from_os_str))]

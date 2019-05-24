@@ -5,18 +5,18 @@
 //!
 //! [`Stabilization`]: struct.Stabilization.html
 
+use crate::procedures::Procedures;
 use crate::routing::identifier::*;
 use crate::routing::Routing;
 use std::net::SocketAddr;
-use crate::procedures::Procedures;
-use std::sync::Mutex;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 /// Basic information needed to connect to the network using a bootstrap peer
 pub struct Bootstrap {
     current_addr: SocketAddr,
     boot_addr: SocketAddr,
-    fingers: usize
+    fingers: usize,
 }
 
 impl Bootstrap {
@@ -24,7 +24,11 @@ impl Bootstrap {
     /// the address of a bootstrapping peer and the number of fingers that
     /// should be stored.
     pub fn new(current_addr: SocketAddr, boot_addr: SocketAddr, fingers: usize) -> Self {
-        Self { current_addr, boot_addr, fingers }
+        Self {
+            current_addr,
+            boot_addr,
+            fingers,
+        }
     }
 
     /// Creates a new routing table by asking the bootstrap peer for all relevant information.
@@ -41,7 +45,12 @@ impl Bootstrap {
         let predecessor = procedures.notify_predecessor(self.current_addr, self.boot_addr)?;
         let finger_table = vec![self.current_addr; self.fingers];
 
-        Ok(Routing::new(self.current_addr, predecessor, successor, finger_table))
+        Ok(Routing::new(
+            self.current_addr,
+            predecessor,
+            successor,
+            finger_table,
+        ))
     }
 }
 
@@ -50,7 +59,7 @@ impl Bootstrap {
 /// [`Routing`]: ../routing/struct.Routing.html
 pub struct Stabilization {
     procedures: Procedures,
-    routing: Arc<Mutex<Routing<SocketAddr>>>
+    routing: Arc<Mutex<Routing<SocketAddr>>>,
 }
 
 impl Stabilization {
@@ -58,7 +67,10 @@ impl Stabilization {
     pub fn new(routing: Arc<Mutex<Routing<SocketAddr>>>, timeout: u64) -> Self {
         let procedures = Procedures::new(timeout);
 
-        Self { procedures, routing }
+        Self {
+            procedures,
+            routing,
+        }
     }
 
     /// Updates the successor and finger tables
@@ -88,14 +100,20 @@ impl Stabilization {
             (routing.current, routing.successor)
         };
 
-        info!("Obtaining new successor from current successor with address {}", *successor);
+        info!(
+            "Obtaining new successor from current successor with address {}",
+            *successor
+        );
 
         let new_successor = self.procedures.notify_predecessor(*current, *successor)?;
 
         let current_id = current.identifier();
         let successor_id = successor.identifier();
 
-        if new_successor.identifier().is_between(&current_id, &successor_id) {
+        if new_successor
+            .identifier()
+            .is_between(&current_id, &successor_id)
+        {
             info!("Updating successor to address {}", new_successor);
 
             let mut routing = self.routing.lock().unwrap();

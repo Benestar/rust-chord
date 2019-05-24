@@ -1,6 +1,6 @@
 use crate::error::MessageError;
-use crate::message::Message;
 use crate::message::p2p::*;
+use crate::message::Message;
 use crate::network::{Connection, ServerHandler};
 use crate::routing::identifier::{Identifier, Identify};
 use crate::routing::Routing;
@@ -19,7 +19,7 @@ type Storage = HashMap<Key, Vec<u8>>;
 /// `STORAGE PUT`, `PEER FIND`, `PREDECESSOR GET` and `PREDECESSOR SET`.
 pub struct P2PHandler {
     routing: Arc<Mutex<Routing<SocketAddr>>>,
-    storage: Mutex<Storage>
+    storage: Mutex<Storage>,
 }
 
 impl P2PHandler {
@@ -85,7 +85,7 @@ impl P2PHandler {
         let mut storage = self.storage.lock().unwrap();
 
         if storage.contains_key(&key) {
-            return false
+            return false;
         }
 
         storage.insert(key, value);
@@ -93,11 +93,18 @@ impl P2PHandler {
         true
     }
 
-    fn handle_storage_get(&self, mut con: Connection, storage_get: StorageGet) -> crate::Result<()> {
+    fn handle_storage_get(
+        &self,
+        mut con: Connection,
+        storage_get: StorageGet,
+    ) -> crate::Result<()> {
         let raw_key = storage_get.raw_key;
         let replication_index = storage_get.replication_index;
 
-        let key = Key { raw_key, replication_index };
+        let key = Key {
+            raw_key,
+            replication_index,
+        };
 
         info!("Received STORAGE GET request for key {}", key);
 
@@ -107,11 +114,17 @@ impl P2PHandler {
             let value_opt = self.get_from_storage(key);
 
             let msg = if let Some(value) = value_opt {
-                info!("Found value for key {} and replying with STORAGE GET SUCCESS", key);
+                info!(
+                    "Found value for key {} and replying with STORAGE GET SUCCESS",
+                    key
+                );
 
                 Message::StorageGetSuccess(StorageGetSuccess { raw_key, value })
             } else {
-                info!("Did not find value for key {} and replying with STORAGE FAILURE", key);
+                info!(
+                    "Did not find value for key {} and replying with STORAGE FAILURE",
+                    key
+                );
 
                 Message::StorageFailure(StorageFailure { raw_key })
             };
@@ -123,11 +136,18 @@ impl P2PHandler {
         Ok(())
     }
 
-    fn handle_storage_put(&self, mut con: Connection, storage_put: StoragePut) -> crate::Result<()> {
+    fn handle_storage_put(
+        &self,
+        mut con: Connection,
+        storage_put: StoragePut,
+    ) -> crate::Result<()> {
         let raw_key = storage_put.raw_key;
         let replication_index = storage_put.replication_index;
 
-        let key = Key { raw_key, replication_index };
+        let key = Key {
+            raw_key,
+            replication_index,
+        };
 
         info!("Received STORAGE PUT request for key {}", key);
 
@@ -135,11 +155,17 @@ impl P2PHandler {
         if self.responsible_for(key.identifier()) {
             // 2. save value for given key
             let msg = if self.put_to_storage(key, storage_put.value) {
-                info!("Stored value for key {} and replying with STORAGE PUT SUCCESS", key);
+                info!(
+                    "Stored value for key {} and replying with STORAGE PUT SUCCESS",
+                    key
+                );
 
                 Message::StoragePutSuccess(StoragePutSuccess { raw_key })
             } else {
-                info!("Value for key {} already exists, thus replying with STORAGE FAILURE", key);
+                info!(
+                    "Value for key {} already exists, thus replying with STORAGE FAILURE",
+                    key
+                );
 
                 Message::StorageFailure(StorageFailure { raw_key })
             };
@@ -162,20 +188,30 @@ impl P2PHandler {
         info!("Replying with PEER FOUND with address {}", socket_addr);
 
         // 2. reply with PEER FOUND either with this node or the best next node
-        let peer_found = PeerFound { identifier, socket_addr };
+        let peer_found = PeerFound {
+            identifier,
+            socket_addr,
+        };
         con.send(&Message::PeerFound(peer_found))?;
 
         Ok(())
     }
 
-    fn handle_predecessor_notify(&self, mut con: Connection, predecessor_notify: PredecessorNotify) -> crate::Result<()> {
+    fn handle_predecessor_notify(
+        &self,
+        mut con: Connection,
+        predecessor_notify: PredecessorNotify,
+    ) -> crate::Result<()> {
         let predecessor_addr = predecessor_notify.socket_addr;
 
         info!("Received PREDECESSOR GET request from {}", predecessor_addr);
 
         let socket_addr = self.notify_predecessor(predecessor_addr);
 
-        info!("Replying with PREDECESSOR REPLY and address {}", socket_addr);
+        info!(
+            "Replying with PREDECESSOR REPLY and address {}",
+            socket_addr
+        );
 
         // 3. return the current predecessor with PREDECESSOR REPLY
         let predecessor_reply = PredecessorReply { socket_addr };
@@ -190,16 +226,13 @@ impl P2PHandler {
         info!("P2P handler received message of type {}", msg);
 
         match msg {
-            Message::StorageGet(storage_get) =>
-                self.handle_storage_get(con, storage_get),
-            Message::StoragePut(storage_put) =>
-                self.handle_storage_put(con, storage_put),
-            Message::PeerFind(peer_find) =>
-                self.handle_peer_find(con, peer_find),
-            Message::PredecessorNotify(predecessor_get) =>
-                self.handle_predecessor_notify(con, predecessor_get),
-            _ =>
-                Err(Box::new(MessageError::new(msg)))
+            Message::StorageGet(storage_get) => self.handle_storage_get(con, storage_get),
+            Message::StoragePut(storage_put) => self.handle_storage_put(con, storage_put),
+            Message::PeerFind(peer_find) => self.handle_peer_find(con, peer_find),
+            Message::PredecessorNotify(predecessor_get) => {
+                self.handle_predecessor_notify(con, predecessor_get)
+            }
+            _ => Err(Box::new(MessageError::new(msg))),
         }
     }
 

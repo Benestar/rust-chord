@@ -14,13 +14,13 @@
 //! [`Identify`]: trait.Identify.html
 //! [`IdentifierValue`]: struct.IdentifierValue.html
 
+use crate::storage::Key;
 use bigint::U256;
 use ring::digest;
 use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};
-use std::ops::{Add, Sub};
 use std::ops::Deref;
-use crate::storage::Key;
+use std::ops::{Add, Sub};
 
 /// A 256 bit identifier on an identifier circle
 #[derive(Copy, Clone, PartialEq)]
@@ -186,7 +186,7 @@ impl Identify for SocketAddr {
     fn identifier(&self) -> Identifier {
         match self {
             SocketAddr::V4(v4) => v4.identifier(),
-            SocketAddr::V6(v6) => v6.identifier()
+            SocketAddr::V6(v6) => v6.identifier(),
         }
     }
 }
@@ -205,7 +205,7 @@ impl Identify for Key {
 #[derive(Clone, Copy, Debug)]
 pub struct IdentifierValue<T> {
     value: T,
-    identifier: Identifier
+    identifier: Identifier,
 }
 
 impl<T: Identify> IdentifierValue<T> {
@@ -250,6 +250,7 @@ mod tests {
 
     #[test]
     fn identifier_with_bit() {
+        #[rustfmt::skip]
         let bytes = [
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -292,6 +293,7 @@ mod tests {
 
     #[test]
     fn leading_zeros() {
+        #[rustfmt::skip]
         let identifier = Identifier::new(&[
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,

@@ -10,12 +10,12 @@
 use crate::message::Message;
 use std::io;
 use std::io::prelude::*;
+use std::io::Cursor;
 use std::net::*;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use threadpool::ThreadPool;
-use std::io::Cursor;
 
 const MAX_MESSAGE_SIZE: usize = 64000;
 
@@ -34,7 +34,7 @@ const MAX_MESSAGE_SIZE: usize = 64000;
 /// ```
 pub struct Connection {
     stream: TcpStream,
-    buffer: [u8; MAX_MESSAGE_SIZE]
+    buffer: [u8; MAX_MESSAGE_SIZE],
 }
 
 impl Connection {
@@ -53,19 +53,17 @@ impl Connection {
     /// ../../std/net/struct.TcpStream.html#method.set_read_timeout
     /// [`TcpStream::set_write_timeout`]:
     /// ../../std/net/struct.TcpStream.html#method.set_write_timeout
-    pub fn open<A: ToSocketAddrs>(addr: A, timeout_ms: u64)
-        -> io::Result<Self>
-    {
+    pub fn open<A: ToSocketAddrs>(addr: A, timeout_ms: u64) -> io::Result<Self> {
         // TODO add connection timeout
         let stream = TcpStream::connect(addr)?;
 
         trace!("Connection to {} - Opened", stream.peer_addr()?);
 
         let timeout = Duration::from_millis(timeout_ms);
-        stream.set_read_timeout(Some (timeout))?;
-        stream.set_write_timeout(Some (timeout))?;
+        stream.set_read_timeout(Some(timeout))?;
+        stream.set_write_timeout(Some(timeout))?;
 
-        Ok (Self::from_stream(stream))
+        Ok(Self::from_stream(stream))
     }
 
     fn from_stream(stream: TcpStream) -> Self {
@@ -85,7 +83,11 @@ impl Connection {
         let msg = Message::parse(Cursor::new(&self.buffer[..size]))?;
 
         // output debug information
-        trace!("Connection to {} - Received message of type {}", self.stream.peer_addr()?, msg);
+        trace!(
+            "Connection to {} - Received message of type {}",
+            self.stream.peer_addr()?,
+            msg
+        );
 
         Ok(msg)
     }
@@ -98,7 +100,11 @@ impl Connection {
         let size = msg.write_to(Cursor::new(self.buffer.as_mut()))?;
 
         // output debug information
-        trace!("Connection to {} - Sent message of type {}", self.stream.peer_addr()?, msg);
+        trace!(
+            "Connection to {} - Sent message of type {}",
+            self.stream.peer_addr()?,
+            msg
+        );
 
         // write bytes to tcp stream
         self.stream.write_all(&self.buffer[..size])
@@ -167,15 +173,18 @@ pub trait ServerHandler {
     /// [`handle_connection`]: #tymethod.handle_connection
     fn handle_incoming(&self, result: io::Result<TcpStream>) {
         match result {
-            Ok (stream) => {
-                trace!("Handling incoming connection from {}", stream.peer_addr().unwrap());
+            Ok(stream) => {
+                trace!(
+                    "Handling incoming connection from {}",
+                    stream.peer_addr().unwrap()
+                );
 
                 // TODO handle timeouts
                 let connection = Connection::from_stream(stream);
 
                 self.handle_connection(connection)
-            },
-            Err (error) => self.handle_error(error)
+            }
+            Err(error) => self.handle_error(error),
         }
     }
 }
@@ -202,7 +211,7 @@ pub trait ServerHandler {
 ///     .expect("could not bind to port");
 /// ```
 pub struct Server<T> {
-    handler: Arc<T>
+    handler: Arc<T>,
 }
 
 impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
@@ -215,16 +224,20 @@ impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
     /// [`Send`]: ../../std/marker/trait.Send.html
     /// [`Sync`]: ../../std/marker/trait.Sync.html
     pub fn new(handler: T) -> Self {
-        Self { handler: Arc::new(handler) }
+        Self {
+            handler: Arc::new(handler),
+        }
     }
 
     /// Listens on the given socket address.
     ///
     /// `num_workers` defines the number of worker threads which handle
     /// incoming requests in parallel.
-    pub fn listen<A: ToSocketAddrs>(self, addr: A, num_workers: usize)
-        -> io::Result<thread::JoinHandle<()>>
-    {
+    pub fn listen<A: ToSocketAddrs>(
+        self,
+        addr: A,
+        num_workers: usize,
+    ) -> io::Result<thread::JoinHandle<()>> {
         let listener = TcpListener::bind(addr)?;
 
         trace!("Server listening on address {}", listener.local_addr()?);
@@ -240,6 +253,6 @@ impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
             }
         });
 
-        Ok (handle)
+        Ok(handle)
     }
 }
