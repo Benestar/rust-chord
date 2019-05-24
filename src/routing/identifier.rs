@@ -24,7 +24,7 @@ use std::ops::{Add, Sub};
 
 /// A 256 bit identifier on an identifier circle
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Identifier<T: IdentifierArithmetic>(T);
+pub struct Identifier<T>(T);
 
 pub type IdentifierU256 = Identifier<U256>;
 
@@ -164,7 +164,7 @@ impl<T: IdentifierArithmetic> Sub for Identifier<T> {
     }
 }
 
-impl<T: IdentifierArithmetic + fmt::Display> fmt::Display for Identifier<T> {
+impl<T: fmt::Display> fmt::Display for Identifier<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "‹{}›", self.0)
     }
