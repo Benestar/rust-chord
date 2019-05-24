@@ -1,5 +1,5 @@
 use super::MessagePayload;
-use crate::routing::identifier::Identifier;
+use crate::routing::identifier::IdentifierU256;
 use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 use std::io;
 use std::io::prelude::*;
@@ -71,7 +71,7 @@ pub struct StorageFailure {
 /// This can be implemented using finger tables.
 #[derive(Debug, PartialEq)]
 pub struct PeerFind {
-    pub identifier: Identifier,
+    pub identifier: IdentifierU256,
 }
 
 /// If, after a [`PeerFind`] operation, a node has been found which is closest
@@ -82,7 +82,7 @@ pub struct PeerFind {
 /// [`PeerFind`]: struct.PeerFind.html
 #[derive(Debug, PartialEq)]
 pub struct PeerFound {
-    pub identifier: Identifier,
+    pub identifier: IdentifierU256,
     pub socket_addr: SocketAddr,
 }
 
@@ -224,7 +224,7 @@ impl MessagePayload for PeerFind {
     fn parse(reader: &mut Read) -> io::Result<Self> {
         let mut id_arr = [0; 32];
         reader.read_exact(&mut id_arr)?;
-        let identifier = Identifier::new(&id_arr);
+        let identifier = IdentifierU256::new(&id_arr);
 
         Ok(PeerFind { identifier })
     }
@@ -240,7 +240,7 @@ impl MessagePayload for PeerFound {
     fn parse(reader: &mut Read) -> io::Result<Self> {
         let mut id_arr = [0; 32];
         reader.read_exact(&mut id_arr)?;
-        let identifier = Identifier::new(&id_arr);
+        let identifier = IdentifierU256::new(&id_arr);
 
         let mut ip_arr = [0; 16];
         reader.read_exact(&mut ip_arr)?;
@@ -445,7 +445,7 @@ mod tests {
         ];
 
         let msg = PeerFind {
-            identifier: Identifier::new(&[5; 32]),
+            identifier: IdentifierU256::new(&[5; 32]),
         };
 
         test_message_payload(&buf, msg);
@@ -465,7 +465,7 @@ mod tests {
         ];
 
         let msg = PeerFound {
-            identifier: Identifier::new(&[5; 32]),
+            identifier: IdentifierU256::new(&[5; 32]),
             socket_addr: "127.0.0.1:8080".parse().unwrap(),
         };
 
@@ -486,7 +486,7 @@ mod tests {
         ];
 
         let msg = PeerFound {
-            identifier: Identifier::new(&[5; 32]),
+            identifier: IdentifierU256::new(&[5; 32]),
             socket_addr: "[2001:db8:85a3::8a23:370:7334]:8080".parse().unwrap(),
         };
 

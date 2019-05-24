@@ -23,10 +23,32 @@ use std::ops::Deref;
 use std::ops::{Add, Sub};
 
 /// A 256 bit identifier on an identifier circle
-#[derive(Copy, Clone, PartialEq)]
-pub struct Identifier(U256);
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Identifier<T>(T);
 
-impl Identifier {
+pub type IdentifierU256 = Identifier<U256>;
+
+pub trait IdentifierArithmetic: Sized + PartialOrd + Copy + fmt::Debug {
+    fn overflowing_add(self, other: Self) -> (Self, bool);
+    fn overflowing_sub(self, other: Self) -> (Self, bool);
+    fn leading_zeros(&self) -> u32;
+}
+
+impl IdentifierArithmetic for U256 {
+    fn overflowing_add(self, other: Self) -> (Self, bool) {
+        U256::overflowing_add(self, other)
+    }
+
+    fn overflowing_sub(self, other: Self) -> (Self, bool) {
+        U256::overflowing_sub(self, other)
+    }
+
+    fn leading_zeros(&self) -> u32 {
+        U256::leading_zeros(self)
+    }
+}
+
+impl IdentifierU256 {
     /// Creates a new identifier from a byte slice.
     ///
     /// This method does not perform any hashing but interprets the bytes as
@@ -53,6 +75,25 @@ impl Identifier {
         Self::new(dig.as_ref())
     }
 
+    /// Returns the raw bytes of this identifier.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use chord::routing::identifier::Identifier;
+    /// #
+    /// let id = Identifier::new(&[5; 32]);
+    ///
+    /// assert_eq!([5; 32], id.as_bytes());
+    /// ```
+    pub fn as_bytes(&self) -> [u8; 32] {
+        let mut bytes = [0; 32];
+        self.0.to_big_endian(&mut bytes);
+        bytes
+    }
+}
+
+impl<T: IdentifierArithmetic> Identifier<T> {
     /// Returns whether this identifier is between `first` and `second` on the
     /// identifier circle.
     ///
@@ -73,7 +114,7 @@ impl Identifier {
     /// assert!(id3.is_between(&id2, &id1));
     /// assert!(!id3.is_between(&id1, &id2));
     /// ```
-    pub fn is_between(&self, first: &Identifier, second: &Identifier) -> bool {
+    pub fn is_between(&self, first: &Self, second: &Self) -> bool {
         let (diff1, _) = second.0.overflowing_sub(self.0);
         let (diff2, _) = second.0.overflowing_sub(first.0);
 
@@ -99,27 +140,10 @@ impl Identifier {
     pub fn leading_zeros(&self) -> u32 {
         self.0.leading_zeros()
     }
-
-    /// Returns the raw bytes of this identifier.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # use chord::routing::identifier::Identifier;
-    /// #
-    /// let id = Identifier::new(&[5; 32]);
-    ///
-    /// assert_eq!([5; 32], id.as_bytes());
-    /// ```
-    pub fn as_bytes(&self) -> [u8; 32] {
-        let mut bytes = [0; 32];
-        self.0.to_big_endian(&mut bytes);
-        bytes
-    }
 }
 
 /// Implement overflowing addition for identifiers
-impl Add for Identifier {
+impl<T: IdentifierArithmetic> Add for Identifier<T> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -130,7 +154,7 @@ impl Add for Identifier {
 }
 
 /// Implement overflowing subtraction for identifiers
-impl Sub for Identifier {
+impl<T: IdentifierArithmetic> Sub for Identifier<T> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -140,50 +164,43 @@ impl Sub for Identifier {
     }
 }
 
-impl fmt::Display for Identifier {
+impl<T: fmt::Display> fmt::Display for Identifier<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "‹{}›", self.0)
     }
 }
 
-impl fmt::Debug for Identifier {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let bytes = self.as_bytes();
-        let mut iter = bytes.iter();
-
-        write!(f, "‹{:02x}", iter.next().unwrap())?;
-
-        for byte in iter {
-            write!(f, ":{:02x}", byte)?;
-        }
-
-        write!(f, "›")
-    }
-}
-
 /// Trait to obtain an identifier from a data structure
 pub trait Identify {
+    type Output: IdentifierArithmetic;
+
     /// Generates an identifier for this object.
-    fn identifier(&self) -> Identifier;
+    fn identifier(&self) -> Identifier<Self::Output>;
 }
 
 /// Obtains an identifier by hashing the four octets of the ip address.
 impl Identify for SocketAddrV4 {
-    fn identifier(&self) -> Identifier {
+    type Output = U256;
+
+    fn identifier(&self) -> IdentifierU256 {
         Identifier::generate(self.ip().octets().as_ref())
     }
 }
 
 /// Obtains an identifier by hashing the first eight octets of the ip address.
 impl Identify for SocketAddrV6 {
-    fn identifier(&self) -> Identifier {
+    type Output = U256;
+
+    fn identifier(&self) -> IdentifierU256 {
         Identifier::generate(self.ip().octets()[..8].as_ref())
     }
 }
 
 /// Get the identifier for a V4 or V6 socket address.
 impl Identify for SocketAddr {
-    fn identifier(&self) -> Identifier {
+    type Output = U256;
+
+    fn identifier(&self) -> IdentifierU256 {
         match self {
             SocketAddr::V4(v4) => v4.identifier(),
             SocketAddr::V6(v6) => v6.identifier(),
@@ -193,7 +210,9 @@ impl Identify for SocketAddr {
 
 /// Hashes the raw key and its replication index.
 impl Identify for Key {
-    fn identifier(&self) -> Identifier {
+    type Output = U256;
+
+    fn identifier(&self) -> IdentifierU256 {
         let mut bytes = [0; 33];
         bytes[..32].copy_from_slice(&self.raw_key);
         bytes[32] = self.replication_index;
@@ -203,9 +222,9 @@ impl Identify for Key {
 
 /// Container for a value and its identifier
 #[derive(Clone, Copy, Debug)]
-pub struct IdentifierValue<T> {
+pub struct IdentifierValue<T: Identify> {
     value: T,
-    identifier: Identifier,
+    identifier: Identifier<T::Output>,
 }
 
 impl<T: Identify> IdentifierValue<T> {
@@ -231,12 +250,12 @@ impl<T: Identify> IdentifierValue<T> {
     ///
     /// assert_eq!(value.identifier(), idv.identifier());
     /// ```
-    pub fn identifier(&self) -> Identifier {
+    pub fn identifier(&self) -> Identifier<T::Output> {
         self.identifier
     }
 }
 
-impl<T> Deref for IdentifierValue<T> {
+impl<T: Identify> Deref for IdentifierValue<T> {
     type Target = T;
 
     fn deref(&self) -> &<Self as Deref>::Target {
@@ -256,16 +275,16 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         ];
 
-        let expected = Identifier::new(&bytes);
+        let expected = IdentifierU256::new(&bytes);
 
-        assert_eq!(expected, Identifier::with_bit(128));
+        assert_eq!(expected, IdentifierU256::with_bit(128));
     }
 
     #[test]
     fn is_between() {
-        let id1 = Identifier::new(&[1; 32]);
-        let id2 = Identifier::new(&[2; 32]);
-        let id3 = Identifier::new(&[3; 32]);
+        let id1 = IdentifierU256::new(&[1; 32]);
+        let id2 = IdentifierU256::new(&[2; 32]);
+        let id3 = IdentifierU256::new(&[3; 32]);
 
         assert!(id1.is_between(&id3, &id2));
         assert!(!id1.is_between(&id2, &id3));
@@ -279,8 +298,8 @@ mod tests {
 
     #[test]
     fn is_between_edges() {
-        let id1 = Identifier::new(&[1; 32]);
-        let id2 = Identifier::new(&[2; 32]);
+        let id1 = IdentifierU256::new(&[1; 32]);
+        let id2 = IdentifierU256::new(&[2; 32]);
 
         // the right id is included while the left one is excluded
         assert!(id1.is_between(&id2, &id1));
@@ -294,7 +313,7 @@ mod tests {
     #[test]
     fn leading_zeros() {
         #[rustfmt::skip]
-        let identifier = Identifier::new(&[
+        let identifier = IdentifierU256::new(&[
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
         ]);
@@ -304,50 +323,50 @@ mod tests {
 
     #[test]
     fn leading_zeros_min() {
-        let identifier = Identifier::new(&[0; 32]);
+        let identifier = IdentifierU256::new(&[0; 32]);
 
         assert_eq!(256, identifier.leading_zeros());
     }
 
     #[test]
     fn leading_zeros_max() {
-        let identifier = Identifier::new(&[0xff; 32]);
+        let identifier = IdentifierU256::new(&[0xff; 32]);
 
         assert_eq!(0, identifier.leading_zeros());
     }
 
     #[test]
     fn identifier_add() {
-        let id1 = Identifier::new(&[1; 32]);
-        let id2 = Identifier::new(&[2; 32]);
-        let id3 = Identifier::new(&[3; 32]);
+        let id1 = IdentifierU256::new(&[1; 32]);
+        let id2 = IdentifierU256::new(&[2; 32]);
+        let id3 = IdentifierU256::new(&[3; 32]);
 
         assert_eq!(id3, id1 + id2);
     }
 
     #[test]
     fn identifier_add_overflow() {
-        let id1 = Identifier::new(&[0xff; 32]);
-        let id2 = Identifier::with_bit(0);
-        let id3 = Identifier::new(&[0; 32]);
+        let id1 = IdentifierU256::new(&[0xff; 32]);
+        let id2 = IdentifierU256::with_bit(0);
+        let id3 = IdentifierU256::new(&[0; 32]);
 
         assert_eq!(id3, id1 + id2);
     }
 
     #[test]
     fn identifier_sub() {
-        let id1 = Identifier::new(&[1; 32]);
-        let id2 = Identifier::new(&[2; 32]);
-        let id3 = Identifier::new(&[3; 32]);
+        let id1 = IdentifierU256::new(&[1; 32]);
+        let id2 = IdentifierU256::new(&[2; 32]);
+        let id3 = IdentifierU256::new(&[3; 32]);
 
         assert_eq!(id1, id3 - id2);
     }
 
     #[test]
     fn identifier_sub_overflow() {
-        let id1 = Identifier::new(&[0xff; 32]);
-        let id2 = Identifier::with_bit(0);
-        let id3 = Identifier::new(&[0; 32]);
+        let id1 = IdentifierU256::new(&[0xff; 32]);
+        let id2 = IdentifierU256::with_bit(0);
+        let id3 = IdentifierU256::new(&[0; 32]);
 
         assert_eq!(id1, id3 - id2);
     }

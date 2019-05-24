@@ -4,7 +4,7 @@ use crate::error::MessageError;
 use crate::message::p2p::{PeerFind, PredecessorNotify, StorageGet, StoragePut};
 use crate::message::Message;
 use crate::network::Connection;
-use crate::routing::identifier::Identifier;
+use crate::routing::identifier::IdentifierU256;
 use crate::storage::Key;
 use std::net::SocketAddr;
 
@@ -23,7 +23,7 @@ impl Procedures {
     /// beginning with `peer_addr` which could be taken from a finger table.
     pub fn find_peer(
         &self,
-        identifier: Identifier,
+        identifier: IdentifierU256,
         mut peer_addr: SocketAddr,
     ) -> crate::Result<SocketAddr> {
         debug!("Finding peer for identifier {}", identifier);

@@ -25,7 +25,7 @@ pub mod identifier;
 /// The type parameter `T` is used to describe the identifying property of a
 /// peer, for example its socket address.
 #[derive(Debug)]
-pub struct Routing<T> {
+pub struct Routing<T: Identify> {
     /// Address where this peer is listening for peer-to-peer messages
     pub current: IdentifierValue<T>,
     /// Closest predecessor of this pee
@@ -76,12 +76,12 @@ impl<T: Identify + Copy + Clone> Routing<T> {
     }
 
     /// Checks whether this peer is responsible for the given identifier.
-    pub fn responsible_for(&self, identifier: Identifier) -> bool {
+    pub fn responsible_for(&self, identifier: Identifier<T::Output>) -> bool {
         identifier.is_between(&self.predecessor.identifier(), &self.current.identifier())
     }
 
     /// Returns the peer closest to the given identifier.
-    pub fn closest_peer(&self, identifier: Identifier) -> &IdentifierValue<T> {
+    pub fn closest_peer(&self, identifier: Identifier<T::Output>) -> &IdentifierValue<T> {
         if self.responsible_for(identifier) {
             return &self.current;
         }
