@@ -29,8 +29,8 @@ impl MessageError {
     /// # Examples
     ///
     /// ```
-    /// # use dht::error::MessageError;
-    /// # use dht::message::{Message, p2p};
+    /// # use chord::error::MessageError;
+    /// # use chord::message::{Message, p2p};
     /// # let socket_addr = "127.0.0.1:8080".parse().unwrap();
     /// # let msg = Message::PredecessorNotify(p2p::PredecessorNotify { socket_addr });
     /// #

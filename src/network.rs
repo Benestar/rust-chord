@@ -24,7 +24,7 @@ const MAX_MESSAGE_SIZE: usize = 64000;
 /// # Examples
 ///
 /// ```no_run
-/// # use dht::network::Connection;
+/// # use chord::network::Connection;
 /// #
 /// let mut con = Connection::open("127.0.0.1:8080", 3600)
 ///     .expect("Could not open connection");
@@ -194,7 +194,7 @@ pub trait ServerHandler {
 /// # Examples
 ///
 /// ```no_run
-/// # use dht::network::*;
+/// # use chord::network::*;
 /// # use std::io;
 /// #
 /// # struct TestHandler;

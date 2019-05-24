@@ -63,7 +63,7 @@ impl Identifier {
     /// # Examples
     ///
     /// ```
-    /// # use dht::routing::identifier::Identifier;
+    /// # use chord::routing::identifier::Identifier;
     /// #
     /// let id1 = Identifier::new(&[1; 32]);
     /// let id2 = Identifier::new(&[2; 32]);
@@ -87,7 +87,7 @@ impl Identifier {
     /// # Examples
     ///
     /// ```
-    /// # use dht::routing::identifier::Identifier;
+    /// # use chord::routing::identifier::Identifier;
     /// #
     /// let identifier = Identifier::new(&[
     ///     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -105,7 +105,7 @@ impl Identifier {
     /// # Examples
     ///
     /// ```
-    /// # use dht::routing::identifier::Identifier;
+    /// # use chord::routing::identifier::Identifier;
     /// #
     /// let id = Identifier::new(&[5; 32]);
     ///
@@ -222,7 +222,7 @@ impl<T: Identify> IdentifierValue<T> {
     /// # Examples
     ///
     /// ```
-    /// # use dht::routing::identifier::{IdentifierValue, Identify};
+    /// # use chord::routing::identifier::{IdentifierValue, Identify};
     /// # use std::net::SocketAddr;
     /// #
     /// let value: SocketAddr = "127.0.0.1:8080".parse().unwrap();
