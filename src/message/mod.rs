@@ -110,25 +110,58 @@ impl Message {
         let reader = &mut reader.take(u64::from(size) - 4);
 
         match msg_type {
-            Self::DHT_PUT => MessagePayload::parse(reader).map(Message::DhtPut),
-            Self::DHT_GET => MessagePayload::parse(reader).map(Message::DhtGet),
-            Self::DHT_SUCCESS => MessagePayload::parse(reader).map(Message::DhtSuccess),
-            Self::DHT_FAILURE => MessagePayload::parse(reader).map(Message::DhtFailure),
-            Self::STORAGE_GET => MessagePayload::parse(reader).map(Message::StorageGet),
-            Self::STORAGE_PUT => MessagePayload::parse(reader).map(Message::StoragePut),
+            Self::DHT_PUT => {
+                // parse DhtPut payload
+                MessagePayload::parse(reader).map(Message::DhtPut)
+            }
+            Self::DHT_GET => {
+                // parse DhtGet payload
+                MessagePayload::parse(reader).map(Message::DhtGet)
+            }
+            Self::DHT_SUCCESS => {
+                // parse DhtSuccess payload
+                MessagePayload::parse(reader).map(Message::DhtSuccess)
+            }
+            Self::DHT_FAILURE => {
+                // parse DhtFailure payload
+                MessagePayload::parse(reader).map(Message::DhtFailure)
+            }
+            Self::STORAGE_GET => {
+                // parse StorageGet payload
+                MessagePayload::parse(reader).map(Message::StorageGet)
+            }
+            Self::STORAGE_PUT => {
+                // parse StoragePut payload
+                MessagePayload::parse(reader).map(Message::StoragePut)
+            }
             Self::STORAGE_GET_SUCCESS => {
+                // parse StorageGetSuccess payload
                 MessagePayload::parse(reader).map(Message::StorageGetSuccess)
             }
             Self::STORAGE_PUT_SUCCESS => {
+                // parse StoragePutSuccess payload
                 MessagePayload::parse(reader).map(Message::StoragePutSuccess)
             }
-            Self::STORAGE_FAILURE => MessagePayload::parse(reader).map(Message::StorageFailure),
-            Self::PEER_FIND => MessagePayload::parse(reader).map(Message::PeerFind),
-            Self::PEER_FOUND => MessagePayload::parse(reader).map(Message::PeerFound),
+            Self::STORAGE_FAILURE => {
+                // parse StorageFailure payload
+                MessagePayload::parse(reader).map(Message::StorageFailure)
+            }
+            Self::PEER_FIND => {
+                // parse PeerFind payload
+                MessagePayload::parse(reader).map(Message::PeerFind)
+            }
+            Self::PEER_FOUND => {
+                // parse PeerFound payload
+                MessagePayload::parse(reader).map(Message::PeerFound)
+            }
             Self::PREDECESSOR_NOTIFY => {
+                // parse PredecessorNotify payload
                 MessagePayload::parse(reader).map(Message::PredecessorNotify)
             }
-            Self::PREDECESSOR_REPLY => MessagePayload::parse(reader).map(Message::PredecessorReply),
+            Self::PREDECESSOR_REPLY => {
+                // parse PredecessorReply payload
+                MessagePayload::parse(reader).map(Message::PredecessorReply)
+            }
             _ => Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid message type",

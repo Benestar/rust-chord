@@ -229,8 +229,8 @@ impl P2PHandler {
             Message::StorageGet(storage_get) => self.handle_storage_get(con, storage_get),
             Message::StoragePut(storage_put) => self.handle_storage_put(con, storage_put),
             Message::PeerFind(peer_find) => self.handle_peer_find(con, peer_find),
-            Message::PredecessorNotify(predecessor_get) => {
-                self.handle_predecessor_notify(con, predecessor_get)
+            Message::PredecessorNotify(predecessor_notify) => {
+                self.handle_predecessor_notify(con, predecessor_notify)
             }
             _ => Err(Box::new(MessageError::new(msg))),
         }
