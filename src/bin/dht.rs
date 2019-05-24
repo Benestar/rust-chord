@@ -1,10 +1,10 @@
-extern crate dht;
+extern crate chord;
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
 extern crate structopt;
 
-use dht::config::Config;
+use chord::config::Config;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::process;
@@ -56,7 +56,7 @@ fn main() {
         process::exit(2);
     });
 
-    if let Err(e) = dht::run(config, opt.bootstrap) {
+    if let Err(e) = chord::run(config, opt.bootstrap) {
         error!("Fatal application error: {}", e);
         process::exit(1);
     }

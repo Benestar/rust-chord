@@ -1,5 +1,5 @@
 [package]
-name = "dht"
+name = "chord"
 version = "0.1.0"
 authors = ["bene"]
 edition = "2018"

@@ -1,10 +1,10 @@
-extern crate dht;
+extern crate chord;
 extern crate structopt;
 
-use dht::config::Config;
-use dht::message::api::{DhtGet, DhtPut};
-use dht::message::Message;
-use dht::network::Connection;
+use chord::config::Config;
+use chord::message::api::{DhtGet, DhtPut};
+use chord::message::Message;
+use chord::network::Connection;
 use std::io;
 use std::io::prelude::*;
 use std::path::PathBuf;
