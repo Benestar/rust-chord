@@ -42,7 +42,7 @@ impl Bootstrap {
         let current_id = self.current_addr.identifier();
 
         let successor = procedures.find_peer(current_id, self.boot_addr)?;
-        let predecessor = procedures.notify_predecessor(self.current_addr, self.boot_addr)?;
+        let predecessor = procedures.notify_predecessor(self.current_addr, successor)?;
         let finger_table = vec![self.current_addr; self.fingers];
 
         Ok(Routing::new(
