@@ -37,7 +37,7 @@ pub struct Routing<T> {
     finger_table: Vec<IdentifierValue<T>>,
 }
 
-impl<T: Identify + Copy + Clone> Routing<T> {
+impl<T: Identify + Clone> Routing<T> {
     /// Creates a new `Routing` instance for the given initial values.
     pub fn new(current: T, predecessor: T, successor: T, finger_table: Vec<T>) -> Self {
         Self {
@@ -56,13 +56,6 @@ impl<T: Identify + Copy + Clone> Routing<T> {
     /// Sets the current successor.
     pub fn set_successor(&mut self, new_succ: T) {
         self.successor = IdentifierValue::new(new_succ);
-
-        // update finger table so that all fingers closer than successor point to successor
-        let diff = self.successor.identifier() - self.current.identifier();
-
-        for i in diff.leading_zeros() as usize..self.finger_table.len() {
-            self.finger_table[i] = self.successor;
-        }
     }
 
     /// Sets the finger for the given index.
@@ -80,10 +73,19 @@ impl<T: Identify + Copy + Clone> Routing<T> {
         identifier.is_between(&self.predecessor.identifier(), &self.current.identifier())
     }
 
+    /// Checks whether this peer's successor is responsible for the given identifier.
+    pub fn successor_responsible_for(&self, identifier: Identifier) -> bool {
+        identifier.is_between(&self.current.identifier(), &self.successor.identifier())
+    }
+
     /// Returns the peer closest to the given identifier.
     pub fn closest_peer(&self, identifier: Identifier) -> &IdentifierValue<T> {
         if self.responsible_for(identifier) {
             return &self.current;
+        }
+
+        if self.successor_responsible_for(identifier) {
+            return &self.successor;
         }
 
         let diff = identifier - self.current.identifier();
