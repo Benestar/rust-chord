@@ -94,3 +94,56 @@ impl<T: Identify + Clone> Routing<T> {
         self.finger_table.get(zeros).unwrap_or(&self.successor)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use routing::identifier::Identifier;
+    use std::net::SocketAddr;
+    
+    #[test]
+    fn new_routing() {
+        let current: SocketAddr = "192.168.0.1:123".parse().unwrap();
+        let predecessor: SocketAddr = "192.168.0.3:456".parse().unwrap();
+        let successor: SocketAddr = "192.168.0.2:789".parse().unwrap();
+
+        let finger_table = vec![
+            "192.168.0.4:8080".parse().unwrap(),
+            "192.168.0.5:8080".parse().unwrap(),
+            "192.168.0.6:8080".parse().unwrap(),
+            "192.168.0.7:8080".parse().unwrap(),
+        ];
+
+        let routing = Routing::new(current, predecessor, successor, finger_table.clone());
+
+        assert_eq!(current, *routing.current);
+        assert_eq!(predecessor, *routing.predecessor);
+        assert_eq!(successor, *routing.successor);
+
+        for (expected, finger) in finger_table.iter().zip(routing.finger_table) {
+            assert_eq!(*expected, *finger);
+        }
+    }
+
+    #[test]
+    fn set_predecessor() {
+        let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+        let mut routing = Routing::new(addr, addr, addr, Vec::new());
+
+        let predecessor: SocketAddr = "192.168.0.1:1234".parse().unwrap();
+        routing.set_predecessor(predecessor);
+
+        assert_eq!(predecessor, *routing.predecessor);
+    }
+
+    #[test]
+    fn set_successor() {
+        let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+        let mut routing = Routing::new(addr, addr, addr, Vec::new());
+
+        let succecessor: SocketAddr = "192.168.0.1:1234".parse().unwrap();
+        routing.set_succecessor(succecessor);
+
+        assert_eq!(succecessor, *routing.succecessor);
+    }
+}
