@@ -15,7 +15,7 @@
 //! [`IdentifierValue`]: struct.IdentifierValue.html
 
 use crate::storage::Key;
-use bigint::U256;
+use primitive_types::U256;
 use ring::digest;
 use std::fmt;
 use std::net::{SocketAddr, SocketAddrV4, SocketAddrV6};

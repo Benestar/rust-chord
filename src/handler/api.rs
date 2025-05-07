@@ -100,7 +100,7 @@ impl ApiHandler {
         }
     }
 
-    fn handle_error(&self, error: &Error) {
+    fn handle_error(&self, error: &dyn Error) {
         error!("Error in ApiHandler: {}", error)
     }
 }

@@ -261,15 +261,14 @@ impl fmt::Display for Message {
 }
 
 pub trait MessagePayload: Sized {
-    fn parse(reader: &mut Read) -> io::Result<Self>;
+    fn parse(reader: &mut dyn Read) -> io::Result<Self>;
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()>;
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()>;
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::error::Error;
     use std::fmt::Debug;
     use std::io::{self, Cursor};
 
@@ -350,7 +349,7 @@ mod tests {
         let err = Message::parse(Cursor::new(&buf[..])).err().unwrap();
 
         assert_eq!(io::ErrorKind::InvalidInput, err.kind());
-        assert_eq!("Size must include header", err.description());
+        assert_eq!("Size must include header", err.to_string());
     }
 
     #[test]
@@ -364,7 +363,7 @@ mod tests {
         let err = Message::parse(Cursor::new(&buf[..])).err().unwrap();
 
         assert_eq!(io::ErrorKind::InvalidInput, err.kind());
-        assert_eq!("Invalid message type", err.description());
+        assert_eq!("Invalid message type", err.to_string());
     }
 
     #[test]

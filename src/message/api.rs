@@ -59,7 +59,7 @@ pub struct DhtFailure {
 }
 
 impl MessagePayload for DhtPut {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let ttl = reader.read_u16::<NetworkEndian>()?;
         let replication = reader.read_u8()?;
 
@@ -80,7 +80,7 @@ impl MessagePayload for DhtPut {
         })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication)?;
         writer.write_u8(0)?;
@@ -92,14 +92,14 @@ impl MessagePayload for DhtPut {
 }
 
 impl MessagePayload for DhtGet {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
         Ok(DhtGet { key })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.key)?;
 
         Ok(())
@@ -107,7 +107,7 @@ impl MessagePayload for DhtGet {
 }
 
 impl MessagePayload for DhtSuccess {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
@@ -117,7 +117,7 @@ impl MessagePayload for DhtSuccess {
         Ok(DhtSuccess { key, value })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.key)?;
         writer.write_all(&self.value)?;
 
@@ -126,14 +126,14 @@ impl MessagePayload for DhtSuccess {
 }
 
 impl MessagePayload for DhtFailure {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut key = [0; 32];
         reader.read_exact(&mut key)?;
 
         Ok(DhtFailure { key })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.key)?;
 
         Ok(())

@@ -58,11 +58,11 @@
 //! [w:chord]: https://en.wikipedia.org/wiki/Chord_(peer-to-peer)
 //! [w:cons]: https://en.wikipedia.org/wiki/Consistent_hashing
 
-extern crate bigint;
 extern crate byteorder;
 extern crate ini;
 #[macro_use]
 extern crate log;
+extern crate primitive_types;
 extern crate ring;
 extern crate threadpool;
 
@@ -87,7 +87,7 @@ pub mod routing;
 pub mod stabilization;
 pub mod storage;
 
-type Result<T> = std::result::Result<T, Box<Error>>;
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     println!("Distributed Hash Table based on CHORD");

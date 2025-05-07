@@ -56,7 +56,7 @@ impl Error for MessageError {
         "Unexpected message type"
     }
 
-    fn cause(&self) -> Option<&Error> {
+    fn cause(&self) -> Option<&dyn Error> {
         None
     }
 }

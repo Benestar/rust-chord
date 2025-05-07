@@ -104,7 +104,7 @@ pub struct PredecessorReply {
 }
 
 impl MessagePayload for StorageGet {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let replication_index = reader.read_u8()?;
 
         // Skip reserved fields
@@ -121,7 +121,7 @@ impl MessagePayload for StorageGet {
         })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_u8(self.replication_index)?;
 
         // Fill reserved fields
@@ -136,7 +136,7 @@ impl MessagePayload for StorageGet {
 }
 
 impl MessagePayload for StoragePut {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let ttl = reader.read_u16::<NetworkEndian>()?;
         let replication_index = reader.read_u8()?;
 
@@ -157,7 +157,7 @@ impl MessagePayload for StoragePut {
         })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_u16::<NetworkEndian>(self.ttl)?;
         writer.write_u8(self.replication_index)?;
 
@@ -172,7 +172,7 @@ impl MessagePayload for StoragePut {
 }
 
 impl MessagePayload for StorageGetSuccess {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut raw_key = [0; 32];
         reader.read_exact(&mut raw_key)?;
 
@@ -182,7 +182,7 @@ impl MessagePayload for StorageGetSuccess {
         Ok(StorageGetSuccess { raw_key, value })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.raw_key)?;
         writer.write_all(&self.value)?;
 
@@ -191,14 +191,14 @@ impl MessagePayload for StorageGetSuccess {
 }
 
 impl MessagePayload for StoragePutSuccess {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut raw_key = [0; 32];
         reader.read_exact(&mut raw_key)?;
 
         Ok(StoragePutSuccess { raw_key })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.raw_key)?;
 
         Ok(())
@@ -206,14 +206,14 @@ impl MessagePayload for StoragePutSuccess {
 }
 
 impl MessagePayload for StorageFailure {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut raw_key = [0; 32];
         reader.read_exact(&mut raw_key)?;
 
         Ok(StorageFailure { raw_key })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.raw_key)?;
 
         Ok(())
@@ -221,7 +221,7 @@ impl MessagePayload for StorageFailure {
 }
 
 impl MessagePayload for PeerFind {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut id_arr = [0; 32];
         reader.read_exact(&mut id_arr)?;
         let identifier = Identifier::new(&id_arr);
@@ -229,7 +229,7 @@ impl MessagePayload for PeerFind {
         Ok(PeerFind { identifier })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.identifier.as_bytes())?;
 
         Ok(())
@@ -237,7 +237,7 @@ impl MessagePayload for PeerFind {
 }
 
 impl MessagePayload for PeerFound {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut id_arr = [0; 32];
         reader.read_exact(&mut id_arr)?;
         let identifier = Identifier::new(&id_arr);
@@ -262,7 +262,7 @@ impl MessagePayload for PeerFound {
         })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         writer.write_all(&self.identifier.as_bytes())?;
 
         let ip_address = match self.socket_addr.ip() {
@@ -278,7 +278,7 @@ impl MessagePayload for PeerFound {
 }
 
 impl MessagePayload for PredecessorNotify {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut ip_arr = [0; 16];
         reader.read_exact(&mut ip_arr)?;
 
@@ -296,7 +296,7 @@ impl MessagePayload for PredecessorNotify {
         Ok(PredecessorNotify { socket_addr })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         let ip_address = match self.socket_addr.ip() {
             IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
             IpAddr::V6(ipv6) => ipv6,
@@ -310,7 +310,7 @@ impl MessagePayload for PredecessorNotify {
 }
 
 impl MessagePayload for PredecessorReply {
-    fn parse(reader: &mut Read) -> io::Result<Self> {
+    fn parse(reader: &mut dyn Read) -> io::Result<Self> {
         let mut ip_arr = [0; 16];
         reader.read_exact(&mut ip_arr)?;
 
@@ -328,7 +328,7 @@ impl MessagePayload for PredecessorReply {
         Ok(PredecessorReply { socket_addr })
     }
 
-    fn write_to(&self, writer: &mut Write) -> io::Result<()> {
+    fn write_to(&self, writer: &mut dyn Write) -> io::Result<()> {
         let ip_address = match self.socket_addr.ip() {
             IpAddr::V4(ipv4) => ipv4.to_ipv6_mapped(),
             IpAddr::V6(ipv6) => ipv6,
