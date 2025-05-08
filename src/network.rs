@@ -57,7 +57,7 @@ impl Connection {
         // TODO add connection timeout
         let stream = TcpStream::connect(addr)?;
 
-        trace!("Connection to {} - Opened", stream.peer_addr()?);
+        log::trace!("Connection to {} - Opened", stream.peer_addr()?);
 
         let timeout = Duration::from_millis(timeout_ms);
         stream.set_read_timeout(Some(timeout))?;
@@ -83,7 +83,7 @@ impl Connection {
         let msg = Message::parse(Cursor::new(&self.buffer[..size]))?;
 
         // output debug information
-        trace!(
+        log::trace!(
             "Connection to {} - Received message of type {}",
             self.stream.peer_addr()?,
             msg
@@ -100,7 +100,7 @@ impl Connection {
         let size = msg.write_to(Cursor::new(self.buffer.as_mut()))?;
 
         // output debug information
-        trace!(
+        log::trace!(
             "Connection to {} - Sent message of type {}",
             self.stream.peer_addr()?,
             msg
@@ -174,7 +174,7 @@ pub trait ServerHandler {
     fn handle_incoming(&self, result: io::Result<TcpStream>) {
         match result {
             Ok(stream) => {
-                trace!(
+                log::trace!(
                     "Handling incoming connection from {}",
                     stream.peer_addr().unwrap()
                 );
@@ -240,7 +240,7 @@ impl<T: ServerHandler + Send + Sync + 'static> Server<T> {
     ) -> io::Result<thread::JoinHandle<()>> {
         let listener = TcpListener::bind(addr)?;
 
-        trace!("Server listening on address {}", listener.local_addr()?);
+        log::trace!("Server listening on address {}", listener.local_addr()?);
 
         let handle = thread::spawn(move || {
             let pool = ThreadPool::new(num_workers);

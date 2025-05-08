@@ -91,7 +91,7 @@ impl ApiHandler {
     fn handle_connection(&self, mut con: Connection) -> crate::Result<()> {
         let msg = con.receive()?;
 
-        info!("Api handler received message of type {}", msg);
+        log::info!("Api handler received message of type {}", msg);
 
         match msg {
             Message::DhtGet(dht_get) => self.handle_dht_get(con, dht_get),
@@ -101,7 +101,7 @@ impl ApiHandler {
     }
 
     fn handle_error(&self, error: &dyn Error) {
-        error!("Error in ApiHandler: {}", error)
+        log::error!("Error in ApiHandler: {}", error)
     }
 }
 

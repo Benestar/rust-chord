@@ -81,14 +81,14 @@ impl Stabilization {
     /// After that the finger tables are updated by iterating through each entry and finding the
     /// peer responsible for that finger.
     pub fn stabilize(&mut self) -> crate::Result<()> {
-        info!("Stabilizing routing information");
+        log::info!("Stabilizing routing information");
 
         let update_successor = self.update_successor();
         let update_fingers = self.update_fingers();
 
         let routing = self.routing.lock().unwrap();
 
-        debug!("Current routing information:\n\n{:#?}", *routing);
+        log::debug!("Current routing information:\n\n{:#?}", *routing);
 
         update_successor.and(update_fingers)
     }
@@ -100,7 +100,7 @@ impl Stabilization {
             (routing.current, routing.successor)
         };
 
-        info!(
+        log::info!(
             "Obtaining new successor from current successor with address {}",
             *successor
         );
@@ -114,7 +114,7 @@ impl Stabilization {
             .identifier()
             .is_between(&current_id, &successor_id)
         {
-            info!("Updating successor to address {}", new_successor);
+            log::info!("Updating successor to address {}", new_successor);
 
             let mut routing = self.routing.lock().unwrap();
             routing.set_successor(new_successor);
@@ -130,7 +130,7 @@ impl Stabilization {
             (routing.current, routing.successor, routing.fingers())
         };
 
-        info!("Update fingers using successor with address {}", *successor);
+        log::info!("Update fingers using successor with address {}", *successor);
 
         for i in 0..fingers {
             // TODO do not hardcode for 256 bits here

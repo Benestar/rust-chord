@@ -52,7 +52,7 @@ impl P2PHandler {
             // 2. update the predecessor if necessary
             routing.set_predecessor(predecessor_addr);
 
-            info!("Updated predecessor to new address {}", predecessor_addr);
+            log::info!("Updated predecessor to new address {}", predecessor_addr);
 
             // TODO maybe check whether old predecessor is actually still reachable?
             // TODO give data to new predecessor!!!
@@ -62,14 +62,14 @@ impl P2PHandler {
             // if predecessor points to ourselves, update it to this peer.
             routing.set_predecessor(predecessor_addr);
 
-            info!("Updated predecessor to new address {}", predecessor_addr);
+            log::info!("Updated predecessor to new address {}", predecessor_addr);
         }
 
         if *routing.successor == *routing.current {
             // If successor points to ourselves, update it to this peer.
             routing.set_successor(predecessor_addr);
 
-            info!("Updated successor to new address {}", predecessor_addr);
+            log::info!("Updated successor to new address {}", predecessor_addr);
         }
 
         old_predecessor_addr
@@ -106,7 +106,7 @@ impl P2PHandler {
             replication_index,
         };
 
-        info!("Received STORAGE GET request for key {}", key);
+        log::info!("Received STORAGE GET request for key {}", key);
 
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier()) {
@@ -114,14 +114,14 @@ impl P2PHandler {
             let value_opt = self.get_from_storage(key);
 
             let msg = if let Some(value) = value_opt {
-                info!(
+                log::info!(
                     "Found value for key {} and replying with STORAGE GET SUCCESS",
                     key
                 );
 
                 Message::StorageGetSuccess(StorageGetSuccess { raw_key, value })
             } else {
-                info!(
+                log::info!(
                     "Did not find value for key {} and replying with STORAGE FAILURE",
                     key
                 );
@@ -149,20 +149,20 @@ impl P2PHandler {
             replication_index,
         };
 
-        info!("Received STORAGE PUT request for key {}", key);
+        log::info!("Received STORAGE PUT request for key {}", key);
 
         // 1. check if given key falls into range
         if self.responsible_for(key.identifier()) {
             // 2. save value for given key
             let msg = if self.put_to_storage(key, storage_put.value) {
-                info!(
+                log::info!(
                     "Stored value for key {} and replying with STORAGE PUT SUCCESS",
                     key
                 );
 
                 Message::StoragePutSuccess(StoragePutSuccess { raw_key })
             } else {
-                info!(
+                log::info!(
                     "Value for key {} already exists, thus replying with STORAGE FAILURE",
                     key
                 );
@@ -180,12 +180,12 @@ impl P2PHandler {
     fn handle_peer_find(&self, mut con: Connection, peer_find: PeerFind) -> crate::Result<()> {
         let identifier = peer_find.identifier;
 
-        info!("Received PEER FIND request for identifier {}", identifier);
+        log::info!("Received PEER FIND request for identifier {}", identifier);
 
         // 1. check if given key falls into range
         let socket_addr = self.closest_peer(identifier);
 
-        info!("Replying with PEER FOUND with address {}", socket_addr);
+        log::info!("Replying with PEER FOUND with address {}", socket_addr);
 
         // 2. reply with PEER FOUND either with this node or the best next node
         let peer_found = PeerFound {
@@ -204,11 +204,11 @@ impl P2PHandler {
     ) -> crate::Result<()> {
         let predecessor_addr = predecessor_notify.socket_addr;
 
-        info!("Received PREDECESSOR GET request from {}", predecessor_addr);
+        log::info!("Received PREDECESSOR GET request from {}", predecessor_addr);
 
         let socket_addr = self.notify_predecessor(predecessor_addr);
 
-        info!(
+        log::info!(
             "Replying with PREDECESSOR REPLY and address {}",
             socket_addr
         );
@@ -223,7 +223,7 @@ impl P2PHandler {
     fn handle_connection(&self, mut con: Connection) -> crate::Result<()> {
         let msg = con.receive()?;
 
-        info!("P2P handler received message of type {}", msg);
+        log::info!("P2P handler received message of type {}", msg);
 
         match msg {
             Message::StorageGet(storage_get) => self.handle_storage_get(con, storage_get),
@@ -237,7 +237,7 @@ impl P2PHandler {
     }
 
     fn handle_error(&self, error: &dyn Error) {
-        error!("Error in P2PHandler: {}", error)
+        log::error!("Error in P2PHandler: {}", error)
     }
 }
 

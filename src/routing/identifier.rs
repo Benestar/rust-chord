@@ -112,9 +112,7 @@ impl Identifier {
     /// assert_eq!([5; 32], id.as_bytes());
     /// ```
     pub fn as_bytes(&self) -> [u8; 32] {
-        let mut bytes = [0; 32];
-        self.0.to_big_endian(&mut bytes);
-        bytes
+        self.0.to_big_endian()
     }
 }
 

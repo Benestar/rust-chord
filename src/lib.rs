@@ -58,14 +58,6 @@
 //! [w:chord]: https://en.wikipedia.org/wiki/Chord_(peer-to-peer)
 //! [w:cons]: https://en.wikipedia.org/wiki/Consistent_hashing
 
-extern crate byteorder;
-extern crate ini;
-#[macro_use]
-extern crate log;
-extern crate primitive_types;
-extern crate ring;
-extern crate threadpool;
-
 use crate::config::Config;
 use crate::handler::{ApiHandler, P2PHandler};
 use crate::network::Server;
@@ -93,7 +85,7 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     println!("Distributed Hash Table based on CHORD");
     println!("-------------------------------------\n");
 
-    debug!(
+    log::debug!(
         "The current configuration is as follows.\n\n{:#?}\n",
         &config
     );
@@ -128,22 +120,22 @@ pub fn run(config: Config, bootstrap: Option<SocketAddr>) -> Result<()> {
     let mut stabilization = Stabilization::new(Arc::clone(&routing), config.timeout);
     let stabilization_handle = thread::spawn(move || loop {
         if let Err(err) = stabilization.stabilize() {
-            error!("Error during stabilization:\n\n{:?}", err);
+            log::error!("Error during stabilization:\n\n{:?}", err);
         }
 
         thread::sleep(Duration::from_secs(config.stabilization_interval));
     });
 
     if let Err(err) = p2p_handle.join() {
-        error!("Error joining p2p handler:\n\n{:?}", err);
+        log::error!("Error joining p2p handler:\n\n{:?}", err);
     }
 
     if let Err(err) = api_handle.join() {
-        error!("Error joining api handler:\n\n{:?}", err);
+        log::error!("Error joining api handler:\n\n{:?}", err);
     }
 
     if let Err(err) = stabilization_handle.join() {
-        error!("Error joining stabilization:\n\n{:?}", err);
+        log::error!("Error joining stabilization:\n\n{:?}", err);
     }
 
     Ok(())

@@ -26,7 +26,7 @@ impl Procedures {
         identifier: Identifier,
         mut peer_addr: SocketAddr,
     ) -> crate::Result<SocketAddr> {
-        debug!("Finding peer for identifier {}", identifier);
+        log::debug!("Finding peer for identifier {}", identifier);
 
         // TODO do not fail if one peer does not reply correctly
         loop {
@@ -42,7 +42,7 @@ impl Procedures {
             };
 
             if reply_addr == peer_addr {
-                debug!(
+                log::debug!(
                     "Peer found for identifier {} with address {}",
                     identifier, reply_addr
                 );
@@ -59,7 +59,7 @@ impl Procedures {
     /// Opens a P2P connection to `peer_addr` and sends a STORAGE GET message to retrieve a value for
     /// `key` depending on the reply.
     pub fn get_value(&self, peer_addr: SocketAddr, key: Key) -> crate::Result<Option<Vec<u8>>> {
-        debug!("Get value for key {} from peer {}", key, peer_addr);
+        log::debug!("Get value for key {} from peer {}", key, peer_addr);
 
         let storage_get = StorageGet {
             replication_index: key.replication_index,
@@ -72,14 +72,14 @@ impl Procedures {
         let msg = p2p_con.receive()?;
 
         if let Message::StorageGetSuccess(storage_success) = msg {
-            info!(
+            log::info!(
                 "Value for key {} successfully received from peer {}",
                 key, peer_addr
             );
 
             Ok(Some(storage_success.value))
         } else {
-            warn!("No value found for key {} at peer {}", key, peer_addr);
+            log::warn!("No value found for key {} at peer {}", key, peer_addr);
 
             Ok(None)
         }
@@ -95,7 +95,7 @@ impl Procedures {
         ttl: u16,
         value: Vec<u8>,
     ) -> crate::Result<()> {
-        debug!("Put value for key {} to peer {}", key, peer_addr);
+        log::debug!("Put value for key {} to peer {}", key, peer_addr);
 
         let storage_put = StoragePut {
             ttl,
@@ -110,7 +110,7 @@ impl Procedures {
         let msg = p2p_con.receive()?;
 
         if let Message::StoragePutSuccess(_) = msg {
-            info!(
+            log::info!(
                 "Value for key {} successfully stored at peer {}",
                 key, peer_addr
             );
@@ -119,7 +119,7 @@ impl Procedures {
         }
 
         if let Message::StorageFailure(_) = msg {
-            warn!(
+            log::warn!(
                 "Key {} exists already in storage of peer {}",
                 key, peer_addr
             );
@@ -139,7 +139,7 @@ impl Procedures {
         socket_addr: SocketAddr,
         peer_addr: SocketAddr,
     ) -> crate::Result<SocketAddr> {
-        debug!("Getting predecessor of peer {}", peer_addr);
+        log::debug!("Getting predecessor of peer {}", peer_addr);
 
         let mut con = Connection::open(peer_addr, self.timeout)?;
 
@@ -150,11 +150,11 @@ impl Procedures {
         let msg = con.receive()?;
 
         if let Message::PredecessorReply(predecessor_reply) = msg {
-            info!("Predecessor received from peer {}", peer_addr);
+            log::info!("Predecessor received from peer {}", peer_addr);
 
             Ok(predecessor_reply.socket_addr)
         } else {
-            warn!("No predecessor received from peer {}", peer_addr);
+            log::warn!("No predecessor received from peer {}", peer_addr);
 
             Err(Box::new(MessageError::new(msg)))
         }
